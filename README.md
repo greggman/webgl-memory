@@ -174,3 +174,6 @@ vs just some library you call like `webglMemoryTracker.init(someWebGLRenderingCo
 I structured it this way just because I used [webgl-lint](https://greggman.github.io/webgl-lint) as
 the basis to get this working.
 
+## Licence
+
+[MIT](https://github.com/greggman/webgl-memory/blob/main/LICENCE.md)
