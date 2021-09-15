@@ -323,9 +323,8 @@
     function noop() {
     }
 
-    function makeCreateWrapper(ctx, typeName) {
-      const funcName = `create${typeName[0].toUpperCase()}${typeName.substr(1)}`;
-      console.log(ctx, funcName, ctx[funcName]);
+    function makeCreateWrapper(ctx, typeName, _funcName) {
+      const funcName = _funcName || `create${typeName[0].toUpperCase()}${typeName.substr(1)}`;
       if (!ctx[funcName]) {
         return;
       }
@@ -338,7 +337,11 @@
       };
     }
 
-    function makeDeleteWrapper(typeName, fn = noop) {
+    function makeDeleteWrapper(typeName, fn = noop, _funcName) {
+      const funcName = _funcName || `delete${typeName[0].toUpperCase()}${typeName.substr(1)}`;
+      if (!ctx[funcName]) {
+        return;
+      }
       return function(ctx, funcName, args) {
         const [obj] = args;
         const info = webglObjectToMemory.get(obj);
@@ -510,7 +513,7 @@
       createTexture: makeCreateWrapper(ctx, 'texture'),
       createTransformFeedback: makeCreateWrapper(ctx, 'transformFeedback'),
       createVertexArray: makeCreateWrapper(ctx, 'vertexArray'),
-      createVertexArrayOES: makeCreateWrapper(ctx, 'vertexArray'),
+      createVertexArrayOES: makeCreateWrapper(ctx, 'vertexArray', 'createVertexArrayOES'),
 
       deleteBuffer: makeDeleteWrapper('buffer', function(obj, info) {
         memory.buffer -= info.size;
@@ -529,7 +532,7 @@
       }),
       deleteTransformFeedback: makeDeleteWrapper('transformFeedback'),
       deleteVertexArray: makeDeleteWrapper('vertexArray'),
-      deleteVertexArrayOES: makeDeleteWrapper('vertexArray'),
+      deleteVertexArrayOES: makeDeleteWrapper('vertexArray', noop, 'deleteVertexArrayOES'),
 
       fenceSync: function(ctx) {
         if (!ctx.fenceSync) {
