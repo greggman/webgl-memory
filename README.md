@@ -116,6 +116,11 @@ where as without it uses `webgl-memory.js` in the root folder which is build usi
 `grep=<some expression>` will limit the tests as in `...?src=true&grep=renderbuffer` only
 runs the tests with `renderbuffer` in their description.
 
+## Live Tests
+
+[built version](https://greggman.githubio/webgl-memory/test/)
+[source version](https://greggman.githubio/webgl-memory/test/?src=true)
+
 ## Opinion
 
 I'm not convinced this is the right way to do this. If I was making a
