@@ -87,6 +87,29 @@ The info returned is
 
 [Click here for Example](https://jsgist.org/?src=57dafa41cb1d2d5bc1520832db49f946)
 
+## Development
+
+```bash
+git clone https://github.com/greggman/webgl-memory.git
+cd webgl-memory
+npm install
+```
+
+now serve the folder
+
+```
+npx servez
+```
+
+and go to [`http://localhost:8080/test?src=true`](http://localhost:8080/test?src=true)
+
+`src=true` tells the test harness to use the unrolled source from the `src` folder
+where as without it uses `webgl-memory.js` in the root folder which is build using
+`npm run build`.
+
+`grep=<some expression>` will limit the tests as in `...?src=true&grep=renderbuffer` only
+runs the tests with `renderbuffer` in their description.
+
 ## Opinion
 
 I'm not convinced this is the right way to do this. If I was making a
@@ -135,4 +158,8 @@ const tex = makeTexture(gl);
 freeTexture(gl, tex);
 ```
 
-Wrapping things yourself can have all kinds of benefits.
+Also, even if this is an okay way to do it I'm not sure making it an extension was the best way
+vs just some library you call like `webglMemoryTracker.init(someWebGLRenderingContext)`. 
+I structured it this way just because I used [webgl-lint](https://greggman.github.io/webgl-lint) as
+the basis to get this working.
+
