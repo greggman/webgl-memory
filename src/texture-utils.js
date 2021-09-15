@@ -198,6 +198,138 @@ function getTextureInternalFormatInfo(internalFormat) {
   return s_textureInternalFormatInfo[internalFormat];
 }
 
+function makeComputeBlockRectSizeFunction(blockWidth, blockHeight, bytesPerBlock) {
+  return function(width, height, depth) {
+    const blocksAcross = (width + blockWidth - 1) / blockWidth | 0;
+    const blocksDown =  (height + blockHeight - 1) / blockHeight | 0;
+    return blocksAcross * blocksDown * bytesPerBlock * depth;
+  }
+} 
+
+function makeComputePaddedRectSizeFunction(minWidth, minHeight, divisor) {
+  return function(width, height, depth) {
+    return (Math.max(width, minWidth) * Math.max(height, minHeight) / divisor | 0) * depth;
+  }
+} 
+
+// WEBGL_compressed_texture_s3tc
+const COMPRESSED_RGB_S3TC_DXT1_EXT        = 0x83F0;
+const COMPRESSED_RGBA_S3TC_DXT1_EXT       = 0x83F1;
+const COMPRESSED_RGBA_S3TC_DXT3_EXT       = 0x83F2;
+const COMPRESSED_RGBA_S3TC_DXT5_EXT       = 0x83F3;
+// WEBGL_compressed_texture_etc1
+const COMPRESSED_RGB_ETC1_WEBGL           = 0x8D64;
+// WEBGL_compressed_texture_pvrtc
+const COMPRESSED_RGB_PVRTC_4BPPV1_IMG      = 0x8C00;
+const COMPRESSED_RGB_PVRTC_2BPPV1_IMG      = 0x8C01;
+const COMPRESSED_RGBA_PVRTC_4BPPV1_IMG     = 0x8C02;
+const COMPRESSED_RGBA_PVRTC_2BPPV1_IMG     = 0x8C03;
+// WEBGL_compressed_texture_etc
+const COMPRESSED_R11_EAC                        = 0x9270;
+const COMPRESSED_SIGNED_R11_EAC                 = 0x9271;
+const COMPRESSED_RG11_EAC                       = 0x9272;
+const COMPRESSED_SIGNED_RG11_EAC                = 0x9273;
+const COMPRESSED_RGB8_ETC2                      = 0x9274;
+const COMPRESSED_SRGB8_ETC2                     = 0x9275;
+const COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2  = 0x9276;
+const COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2 = 0x9277;
+const COMPRESSED_RGBA8_ETC2_EAC                 = 0x9278;
+const COMPRESSED_SRGB8_ALPHA8_ETC2_EAC          = 0x9279;
+// WEBGL_compressed_texture_astc
+const COMPRESSED_RGBA_ASTC_4x4_KHR = 0x93B0;
+const COMPRESSED_RGBA_ASTC_5x4_KHR = 0x93B1;
+const COMPRESSED_RGBA_ASTC_5x5_KHR = 0x93B2;
+const COMPRESSED_RGBA_ASTC_6x5_KHR = 0x93B3;
+const COMPRESSED_RGBA_ASTC_6x6_KHR = 0x93B4;
+const COMPRESSED_RGBA_ASTC_8x5_KHR = 0x93B5;
+const COMPRESSED_RGBA_ASTC_8x6_KHR = 0x93B6;
+const COMPRESSED_RGBA_ASTC_8x8_KHR = 0x93B7;
+const COMPRESSED_RGBA_ASTC_10x5_KHR = 0x93B8;
+const COMPRESSED_RGBA_ASTC_10x6_KHR = 0x93B9;
+const COMPRESSED_RGBA_ASTC_10x8_KHR = 0x93BA;
+const COMPRESSED_RGBA_ASTC_10x10_KHR = 0x93BB;
+const COMPRESSED_RGBA_ASTC_12x10_KHR = 0x93BC;
+const COMPRESSED_RGBA_ASTC_12x12_KHR = 0x93BD;
+const COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR = 0x93D0;
+const COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR = 0x93D1;
+const COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR = 0x93D2;
+const COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR = 0x93D3;
+const COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR = 0x93D4;
+const COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR = 0x93D5;
+const COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR = 0x93D6;
+const COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR = 0x93D7;
+const COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR = 0x93D8;
+const COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR = 0x93D9;
+const COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR = 0x93DA;
+const COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR = 0x93DB;
+const COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR = 0x93DC;
+const COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR = 0x93DD;
+// WEBGL_compressed_texture_s3tc_srgb
+const COMPRESSED_SRGB_S3TC_DXT1_EXT        = 0x8C4C;
+const COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT  = 0x8C4D;
+const COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT  = 0x8C4E;
+const COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT  = 0x8C4F;
+
+const compressedTextureFunctions = new Map([
+  [ COMPRESSED_RGB_S3TC_DXT1_EXT, makeComputeBlockRectSizeFunction(4, 4, 8) ],
+  [ COMPRESSED_RGBA_S3TC_DXT1_EXT, makeComputeBlockRectSizeFunction(4, 4, 8) ],
+  [ COMPRESSED_RGBA_S3TC_DXT3_EXT, makeComputeBlockRectSizeFunction(4, 4, 16) ],
+  [ COMPRESSED_RGBA_S3TC_DXT5_EXT, makeComputeBlockRectSizeFunction(4, 4, 16) ],
+
+  [ COMPRESSED_RGB_ETC1_WEBGL, makeComputeBlockRectSizeFunction(4, 4, 8) ],
+
+  [ COMPRESSED_RGB_PVRTC_4BPPV1_IMG, makeComputePaddedRectSizeFunction(8, 8, 2) ],
+  [ COMPRESSED_RGBA_PVRTC_4BPPV1_IMG, makeComputePaddedRectSizeFunction(8, 8, 2) ],
+  [ COMPRESSED_RGB_PVRTC_2BPPV1_IMG, makeComputePaddedRectSizeFunction(16, 8, 4) ],
+  [ COMPRESSED_RGBA_PVRTC_2BPPV1_IMG, makeComputePaddedRectSizeFunction(16, 8, 4) ],
+
+  [ COMPRESSED_R11_EAC, makeComputeBlockRectSizeFunction(4, 4, 8) ],
+  [ COMPRESSED_SIGNED_R11_EAC, makeComputeBlockRectSizeFunction(4, 4, 8) ],
+  [ COMPRESSED_RGB8_ETC2, makeComputeBlockRectSizeFunction(4, 4, 8) ],
+  [ COMPRESSED_SRGB8_ETC2, makeComputeBlockRectSizeFunction(4, 4, 8) ],
+  [ COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2, makeComputeBlockRectSizeFunction(4, 4, 8) ],
+  [ COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2, makeComputeBlockRectSizeFunction(4, 4, 8) ],
+
+  [ COMPRESSED_RG11_EAC, makeComputeBlockRectSizeFunction(4, 4, 16) ],
+  [ COMPRESSED_SIGNED_RG11_EAC, makeComputeBlockRectSizeFunction(4, 4, 16) ],
+  [ COMPRESSED_RGBA8_ETC2_EAC, makeComputeBlockRectSizeFunction(4, 4, 16) ],
+  [ COMPRESSED_SRGB8_ALPHA8_ETC2_EAC, makeComputeBlockRectSizeFunction(4, 4, 16) ],
+
+  [ COMPRESSED_RGBA_ASTC_4x4_KHR, makeComputeBlockRectSizeFunction(4, 4, 16) ],
+  [ COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR, makeComputeBlockRectSizeFunction(4, 4, 16) ],
+  [ COMPRESSED_RGBA_ASTC_5x4_KHR, makeComputeBlockRectSizeFunction(5, 4, 16) ],
+  [ COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR, makeComputeBlockRectSizeFunction(5, 4, 16) ],
+  [ COMPRESSED_RGBA_ASTC_5x5_KHR, makeComputeBlockRectSizeFunction(5, 5, 16) ],
+  [ COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR, makeComputeBlockRectSizeFunction(5, 5, 16) ],
+  [ COMPRESSED_RGBA_ASTC_6x5_KHR, makeComputeBlockRectSizeFunction(6, 5, 16) ],
+  [ COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR, makeComputeBlockRectSizeFunction(6, 5, 16) ],
+  [ COMPRESSED_RGBA_ASTC_6x6_KHR, makeComputeBlockRectSizeFunction(6, 6, 16) ],
+  [ COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR, makeComputeBlockRectSizeFunction(6, 6, 16) ],
+  [ COMPRESSED_RGBA_ASTC_8x5_KHR, makeComputeBlockRectSizeFunction(8, 5, 16) ],
+  [ COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR, makeComputeBlockRectSizeFunction(8, 5, 16) ],
+  [ COMPRESSED_RGBA_ASTC_8x6_KHR, makeComputeBlockRectSizeFunction(8, 6, 16) ],
+  [ COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR, makeComputeBlockRectSizeFunction(8, 6, 16) ],
+  [ COMPRESSED_RGBA_ASTC_8x8_KHR, makeComputeBlockRectSizeFunction(8, 8, 16) ],
+  [ COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR, makeComputeBlockRectSizeFunction(8, 8, 16) ],
+  [ COMPRESSED_RGBA_ASTC_10x5_KHR, makeComputeBlockRectSizeFunction(10, 5, 16) ],
+  [ COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR, makeComputeBlockRectSizeFunction(10, 5, 16) ],
+  [ COMPRESSED_RGBA_ASTC_10x6_KHR, makeComputeBlockRectSizeFunction(10, 6, 16) ],
+  [ COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR, makeComputeBlockRectSizeFunction(10, 6, 16) ],
+  [ COMPRESSED_RGBA_ASTC_10x8_KHR, makeComputeBlockRectSizeFunction(10, 8, 16) ],
+  [ COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR, makeComputeBlockRectSizeFunction(10, 8, 16) ],
+  [ COMPRESSED_RGBA_ASTC_10x10_KHR, makeComputeBlockRectSizeFunction(10, 10, 16) ],
+  [ COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR, makeComputeBlockRectSizeFunction(10, 10, 16) ],
+  [ COMPRESSED_RGBA_ASTC_12x10_KHR, makeComputeBlockRectSizeFunction(12, 10, 16) ],
+  [ COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR, makeComputeBlockRectSizeFunction(12, 10, 16) ],
+  [ COMPRESSED_RGBA_ASTC_12x12_KHR, makeComputeBlockRectSizeFunction(12, 12, 16) ],
+  [ COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR, makeComputeBlockRectSizeFunction(12, 12, 16) ],
+
+  [ COMPRESSED_SRGB_S3TC_DXT1_EXT, makeComputeBlockRectSizeFunction(4, 4, 8) ],
+  [ COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT, makeComputeBlockRectSizeFunction(4, 4, 8) ],
+  [ COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT, makeComputeBlockRectSizeFunction(4, 4, 16) ],
+  [ COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT, makeComputeBlockRectSizeFunction(4, 4, 16) ],
+]);
+
 /**
  * Gets the number of bytes per element for a given internalFormat / type
  * @param {number} internalFormat The internalFormat parameter from texImage2D etc..
@@ -219,3 +351,13 @@ export function getBytesPerElementForInternalFormat(internalFormat, type) {
   }
   return info.bytesPerElement[0];
 }
+
+function getBytesForMipUncompressed(internalFormat, width, height, depth, type) {
+  const bytesPerElement = getBytesPerElementForInternalFormat(internalFormat, type);
+  return width * height * depth * bytesPerElement;
+}
+
+export function getBytesForMip(internalFormat, width, height, depth, type) {
+  const fn = compressedTextureFunctions.get(internalFormat);
+  return fn ? fn(width, height, depth) : getBytesForMipUncompressed(internalFormat, width, height, depth, type);
+};

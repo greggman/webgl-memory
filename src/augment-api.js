@@ -21,7 +21,9 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-import * as textureUtils from './texture-utils.js';
+import {
+  getBytesForMip,
+} from './texture-utils.js';
 import {
   computeDrawingbufferSize,
   isTypedArray,
@@ -162,8 +164,8 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
       throw new Error(`unknown renderbuffer ${obj}`);
     }
 
-    const bytesPerElement = textureUtils.getBytesPerElementForInternalFormat(internalFormat);
-    const newSize = width * height * bytesPerElement * samples;
+    const bytesForMip = getBytesForMip(internalFormat, width, height, 1);
+    const newSize = bytesForMip * samples;
 
     memory.renderbuffer -= info.size;
     info.size = newSize;
@@ -225,9 +227,8 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
     info.depth = depth;
     info.internalFormat = internalFormat;
     info.type = undefined;
-    const bytesPerElement = textureUtils.getBytesPerElementForInternalFormat(internalFormat);
     for (let level = 0; level < levels; ++level) {
-      const newMipSize = width * height * depth * bytesPerElement;
+      const newMipSize = getBytesForMip(internalFormat, width, height, depth);
       updateMipLevel(info, level, newMipSize);
       width = Math.ceil(Math.max(width / 2, 1));
       height = Math.ceil(Math.max(height / 2, 1));
@@ -296,8 +297,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
         info.internalFormat = internalFormat;
         info.type = UNSIGNED_BYTE;
       }
-      const bytesPerElement = textureUtils.getBytesPerElementForInternalFormat(internalFormat, UNSIGNED_BYTE);
-      const newMipSize = width * height * bytesPerElement;
+      const newMipSize = getBytesForMip(internalFormat, width, height, 1, UNSIGNED_BYTE);
       updateMipLevel(info, level, newMipSize);
     },
 
@@ -312,6 +312,46 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
     createTransformFeedback: makeCreateWrapper(ctx, 'transformFeedback'),
     createVertexArray: makeCreateWrapper(ctx, 'vertexArray'),
     createVertexArrayOES: makeCreateWrapper(ctx, 'vertexArray', 'createVertexArrayOES'),
+
+    // WebGL 1:
+    // void gl.compressedTexImage2D(target, level, internalformat, width, height, border, ArrayBufferView? pixels);
+    //
+    // Additionally available in WebGL 2:
+    // read from buffer bound to gl.PIXEL_UNPACK_BUFFER
+    // void gl.compressedTexImage2D(target, level, internalformat, width, height, border, GLsizei imageSize, GLintptr offset);
+    // void gl.compressedTexImage2D(target, level, internalformat, width, height, border,
+    //                              ArrayBufferView srcData, optional srcOffset, optional srcLengthOverride);
+    compressedTexImage2D(ctx, funcName, args) {
+      const [target, level, internalFormat, width, height] = args;
+      const info = getTextureInfo(target);
+      if (level === 0) {
+        info.width = width;
+        info.height = height;
+        info.depth = 1;
+        info.internalFormat = internalFormat;
+        info.type = UNSIGNED_BYTE;
+      }
+      const newMipSize = getBytesForMip(internalFormat, width, height, 1, UNSIGNED_BYTE);
+      updateMipLevel(info, level, newMipSize);
+    },
+
+    // read from buffer bound to gl.PIXEL_UNPACK_BUFFER
+    // void gl.compressedTexImage3D(target, level, internalformat, width, height, depth, border, GLsizei imageSize, GLintptr offset);
+    // void gl.compressedTexImage3D(target, level, internalformat, width, height, depth, border,
+    //                              ArrayBufferView srcData, optional srcOffset, optional srcLengthOverride);
+    compressedTexImage3D(ctx, funcName, args) {
+      const [target, level, internalFormat, width, height, depth] = args;
+      const info = getTextureInfo(target);
+      if (level === 0) {
+        info.width = width;
+        info.height = height;
+        info.depth = depth;
+        info.internalFormat = internalFormat;
+        info.type = UNSIGNED_BYTE;
+      }
+      const newMipSize = getBytesForMip(internalFormat, width, height, depth, UNSIGNED_BYTE);
+      updateMipLevel(info, level, newMipSize);
+    },
 
     deleteBuffer: makeDeleteWrapper('buffer', function(obj, info) {
       memory.buffer -= info.size;
@@ -350,14 +390,13 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
       const [target] = args;
       const info = getTextureInfo(target);
       let {width, height, depth, internalFormat, type} = info;
-      const bytesPerElement = textureUtils.getBytesPerElementForInternalFormat(internalFormat, type);
       let level = 1;
 
       while (!(width === 1 && height === 1 && (depth === 1 || target === TEXTURE_2D_ARRAY))) {
         width = Math.ceil(Math.max(width / 2, 1));
         height = Math.ceil(Math.max(height / 2, 1));
         depth = target === TEXTURE_2D_ARRAY ? depth : Math.ceil(Math.max(depth / 2, 1));
-        const newMipSize = width * height * depth * bytesPerElement;
+        const newMipSize = getBytesForMip(internalFormat, width, height, depth, type);
         updateMipLevel(info, level++, newMipSize);
       }
     },
@@ -425,8 +464,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
         info.internalFormat = internalFormat;
         info.type = type;
       }
-      const bytesPerElement = textureUtils.getBytesPerElementForInternalFormat(internalFormat, type);
-      const newMipSize = width * height * bytesPerElement;
+      const newMipSize = getBytesForMip(internalFormat, width, height, 1, type);
       updateMipLevel(info, level, newMipSize);
     },
 
@@ -451,8 +489,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
         info.internalFormat = internalFormat;
         info.type = type;
       }
-      const bytesPerElement = textureUtils.getBytesPerElementForInternalFormat(internalFormat, type);
-      const newMipSize = width * height * depth * bytesPerElement;
+      const newMipSize = getBytesForMip(internalFormat, width, height, depth, type);
       updateMipLevel(info, level, newMipSize);
     },
 

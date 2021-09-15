@@ -35,6 +35,48 @@ describe('tex-image tests', () => {
     tracker.deleteObjectAndMemory(texSize);
   });
 
+  it('test compressedTexImage2D', () => {
+    const {gl} = createContext();
+    const ext = gl.getExtension('WEBGL_compressed_texture_s3tc');
+    if (!ext) {
+      return;
+    }
+    const tracker = new MemInfoTracker(gl, 'texture');
+
+    const tex1 = gl.createTexture();
+    tracker.addObjects(1);
+
+    gl.bindTexture(gl.TEXTURE_2D, tex1);
+    const mip0Size = (12 / 4) * (12 / 4) * 8;
+    gl.compressedTexImage2D(gl.TEXTURE_2D, 0, ext.COMPRESSED_RGB_S3TC_DXT1_EXT, 12, 12, 0, new Uint8Array(mip0Size));
+    tracker.addMemory(mip0Size);
+
+    gl.deleteTexture(tex1);
+    tracker.deleteObjectAndMemory(mip0Size);
+  });
+
+  /*
+  it('test compressedTexImage3D', () => {
+    const {gl} = createContext2();
+    const ext = gl.getExtension('WEBGL_compressed_texture_s3tc');
+    if (!ext) {
+      return;
+    }
+    const tracker = new MemInfoTracker(gl, 'texture');
+
+    const tex1 = gl.createTexture();
+    tracker.addObjects(1);
+
+    gl.bindTexture(gl.TEXTURE_3D, tex1);
+    const mip0Size = (12 / 4) * (12 / 4) * 8 * 6;
+    gl.compressedTexImage3D(gl.TEXTURE_3D, 0, ext.COMPRESSED_RGB_S3TC_DXT1_EXT, 12, 12, 6, 0, new Uint8Array(mip0Size));
+    tracker.addMemory(mip0Size);
+
+    gl.deleteTexture(tex1);
+    tracker.deleteObjectAndMemory(mip0Size);
+  });
+  */
+
   it('test OES_texture_float', () => {
     const {gl} = createContext();
     const ext = gl.getExtension('OES_texture_float');
