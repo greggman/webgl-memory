@@ -123,7 +123,6 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
 
   function makeCreateWrapper(ctx, typeName) {
     const funcName = `create${typeName[0].toUpperCase()}${typeName.substr(1)}`;
-    console.log(ctx, funcName, ctx[funcName]);
     if (!ctx[funcName]) {
       return;
     }
