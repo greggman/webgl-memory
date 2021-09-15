@@ -1,11 +1,11 @@
 import {describe, it} from '../mocha-support.js';
-import {createContext2} from '../webgl.js';
+import {createContext} from '../webgl.js';
 import {MemInfoTracker} from './test-utils.js';
 
 describe('program tests', () => {
 
   it('test program', () => {
-    const {gl} = createContext2();
+    const {gl} = createContext();
     if (!gl) {
       return;
     }
