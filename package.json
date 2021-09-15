@@ -1,8 +1,9 @@
 {
   "name": "webgl-memory",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A WebGL memory tracker",
   "main": "webgl-memory.js",
+  "module": "src/webgl-memory.js",
   "scripts": {
     "build": "rollup -c",
     "eslint": "eslint \"**/*.js\"",
@@ -21,6 +22,9 @@
   "bugs": {
     "url": "https://github.com/greggman/webgl-memory/issues"
   },
+  "files": [
+    "webgl-memory.js"
+  ],
   "homepage": "https://github.com/greggman/webgl-memory#readme",
   "devDependencies": {
     "eslint": "^7.5.0",
