@@ -118,8 +118,8 @@ runs the tests with `renderbuffer` in their description.
 
 ## Live Tests
 
-[built version](https://greggman.githubio/webgl-memory/test/)
-[source version](https://greggman.githubio/webgl-memory/test/?src=true)
+[built version](https://greggman.github.io/webgl-memory/test/)
+[source version](https://greggman.github.io/webgl-memory/test/?src=true)
 
 ## Opinion
 
