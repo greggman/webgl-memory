@@ -1,4 +1,4 @@
-/* webgl-memory@0.0.1, license MIT */
+/* webgl-memory@0.0.2, license MIT */
 (function (factory) {
   typeof define === 'function' && define.amd ? define(factory) :
   factory();
@@ -164,6 +164,138 @@
     return s_textureInternalFormatInfo[internalFormat];
   }
 
+  function makeComputeBlockRectSizeFunction(blockWidth, blockHeight, bytesPerBlock) {
+    return function(width, height, depth) {
+      const blocksAcross = (width + blockWidth - 1) / blockWidth | 0;
+      const blocksDown =  (height + blockHeight - 1) / blockHeight | 0;
+      return blocksAcross * blocksDown * bytesPerBlock * depth;
+    }
+  } 
+
+  function makeComputePaddedRectSizeFunction(minWidth, minHeight, divisor) {
+    return function(width, height, depth) {
+      return (Math.max(width, minWidth) * Math.max(height, minHeight) / divisor | 0) * depth;
+    }
+  } 
+
+  // WEBGL_compressed_texture_s3tc
+  const COMPRESSED_RGB_S3TC_DXT1_EXT        = 0x83F0;
+  const COMPRESSED_RGBA_S3TC_DXT1_EXT       = 0x83F1;
+  const COMPRESSED_RGBA_S3TC_DXT3_EXT       = 0x83F2;
+  const COMPRESSED_RGBA_S3TC_DXT5_EXT       = 0x83F3;
+  // WEBGL_compressed_texture_etc1
+  const COMPRESSED_RGB_ETC1_WEBGL           = 0x8D64;
+  // WEBGL_compressed_texture_pvrtc
+  const COMPRESSED_RGB_PVRTC_4BPPV1_IMG      = 0x8C00;
+  const COMPRESSED_RGB_PVRTC_2BPPV1_IMG      = 0x8C01;
+  const COMPRESSED_RGBA_PVRTC_4BPPV1_IMG     = 0x8C02;
+  const COMPRESSED_RGBA_PVRTC_2BPPV1_IMG     = 0x8C03;
+  // WEBGL_compressed_texture_etc
+  const COMPRESSED_R11_EAC                        = 0x9270;
+  const COMPRESSED_SIGNED_R11_EAC                 = 0x9271;
+  const COMPRESSED_RG11_EAC                       = 0x9272;
+  const COMPRESSED_SIGNED_RG11_EAC                = 0x9273;
+  const COMPRESSED_RGB8_ETC2                      = 0x9274;
+  const COMPRESSED_SRGB8_ETC2                     = 0x9275;
+  const COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2  = 0x9276;
+  const COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2 = 0x9277;
+  const COMPRESSED_RGBA8_ETC2_EAC                 = 0x9278;
+  const COMPRESSED_SRGB8_ALPHA8_ETC2_EAC          = 0x9279;
+  // WEBGL_compressed_texture_astc
+  const COMPRESSED_RGBA_ASTC_4x4_KHR = 0x93B0;
+  const COMPRESSED_RGBA_ASTC_5x4_KHR = 0x93B1;
+  const COMPRESSED_RGBA_ASTC_5x5_KHR = 0x93B2;
+  const COMPRESSED_RGBA_ASTC_6x5_KHR = 0x93B3;
+  const COMPRESSED_RGBA_ASTC_6x6_KHR = 0x93B4;
+  const COMPRESSED_RGBA_ASTC_8x5_KHR = 0x93B5;
+  const COMPRESSED_RGBA_ASTC_8x6_KHR = 0x93B6;
+  const COMPRESSED_RGBA_ASTC_8x8_KHR = 0x93B7;
+  const COMPRESSED_RGBA_ASTC_10x5_KHR = 0x93B8;
+  const COMPRESSED_RGBA_ASTC_10x6_KHR = 0x93B9;
+  const COMPRESSED_RGBA_ASTC_10x8_KHR = 0x93BA;
+  const COMPRESSED_RGBA_ASTC_10x10_KHR = 0x93BB;
+  const COMPRESSED_RGBA_ASTC_12x10_KHR = 0x93BC;
+  const COMPRESSED_RGBA_ASTC_12x12_KHR = 0x93BD;
+  const COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR = 0x93D0;
+  const COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR = 0x93D1;
+  const COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR = 0x93D2;
+  const COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR = 0x93D3;
+  const COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR = 0x93D4;
+  const COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR = 0x93D5;
+  const COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR = 0x93D6;
+  const COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR = 0x93D7;
+  const COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR = 0x93D8;
+  const COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR = 0x93D9;
+  const COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR = 0x93DA;
+  const COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR = 0x93DB;
+  const COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR = 0x93DC;
+  const COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR = 0x93DD;
+  // WEBGL_compressed_texture_s3tc_srgb
+  const COMPRESSED_SRGB_S3TC_DXT1_EXT        = 0x8C4C;
+  const COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT  = 0x8C4D;
+  const COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT  = 0x8C4E;
+  const COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT  = 0x8C4F;
+
+  const compressedTextureFunctions = new Map([
+    [ COMPRESSED_RGB_S3TC_DXT1_EXT, makeComputeBlockRectSizeFunction(4, 4, 8) ],
+    [ COMPRESSED_RGBA_S3TC_DXT1_EXT, makeComputeBlockRectSizeFunction(4, 4, 8) ],
+    [ COMPRESSED_RGBA_S3TC_DXT3_EXT, makeComputeBlockRectSizeFunction(4, 4, 16) ],
+    [ COMPRESSED_RGBA_S3TC_DXT5_EXT, makeComputeBlockRectSizeFunction(4, 4, 16) ],
+
+    [ COMPRESSED_RGB_ETC1_WEBGL, makeComputeBlockRectSizeFunction(4, 4, 8) ],
+
+    [ COMPRESSED_RGB_PVRTC_4BPPV1_IMG, makeComputePaddedRectSizeFunction(8, 8, 2) ],
+    [ COMPRESSED_RGBA_PVRTC_4BPPV1_IMG, makeComputePaddedRectSizeFunction(8, 8, 2) ],
+    [ COMPRESSED_RGB_PVRTC_2BPPV1_IMG, makeComputePaddedRectSizeFunction(16, 8, 4) ],
+    [ COMPRESSED_RGBA_PVRTC_2BPPV1_IMG, makeComputePaddedRectSizeFunction(16, 8, 4) ],
+
+    [ COMPRESSED_R11_EAC, makeComputeBlockRectSizeFunction(4, 4, 8) ],
+    [ COMPRESSED_SIGNED_R11_EAC, makeComputeBlockRectSizeFunction(4, 4, 8) ],
+    [ COMPRESSED_RGB8_ETC2, makeComputeBlockRectSizeFunction(4, 4, 8) ],
+    [ COMPRESSED_SRGB8_ETC2, makeComputeBlockRectSizeFunction(4, 4, 8) ],
+    [ COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2, makeComputeBlockRectSizeFunction(4, 4, 8) ],
+    [ COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2, makeComputeBlockRectSizeFunction(4, 4, 8) ],
+
+    [ COMPRESSED_RG11_EAC, makeComputeBlockRectSizeFunction(4, 4, 16) ],
+    [ COMPRESSED_SIGNED_RG11_EAC, makeComputeBlockRectSizeFunction(4, 4, 16) ],
+    [ COMPRESSED_RGBA8_ETC2_EAC, makeComputeBlockRectSizeFunction(4, 4, 16) ],
+    [ COMPRESSED_SRGB8_ALPHA8_ETC2_EAC, makeComputeBlockRectSizeFunction(4, 4, 16) ],
+
+    [ COMPRESSED_RGBA_ASTC_4x4_KHR, makeComputeBlockRectSizeFunction(4, 4, 16) ],
+    [ COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR, makeComputeBlockRectSizeFunction(4, 4, 16) ],
+    [ COMPRESSED_RGBA_ASTC_5x4_KHR, makeComputeBlockRectSizeFunction(5, 4, 16) ],
+    [ COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR, makeComputeBlockRectSizeFunction(5, 4, 16) ],
+    [ COMPRESSED_RGBA_ASTC_5x5_KHR, makeComputeBlockRectSizeFunction(5, 5, 16) ],
+    [ COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR, makeComputeBlockRectSizeFunction(5, 5, 16) ],
+    [ COMPRESSED_RGBA_ASTC_6x5_KHR, makeComputeBlockRectSizeFunction(6, 5, 16) ],
+    [ COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR, makeComputeBlockRectSizeFunction(6, 5, 16) ],
+    [ COMPRESSED_RGBA_ASTC_6x6_KHR, makeComputeBlockRectSizeFunction(6, 6, 16) ],
+    [ COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR, makeComputeBlockRectSizeFunction(6, 6, 16) ],
+    [ COMPRESSED_RGBA_ASTC_8x5_KHR, makeComputeBlockRectSizeFunction(8, 5, 16) ],
+    [ COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR, makeComputeBlockRectSizeFunction(8, 5, 16) ],
+    [ COMPRESSED_RGBA_ASTC_8x6_KHR, makeComputeBlockRectSizeFunction(8, 6, 16) ],
+    [ COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR, makeComputeBlockRectSizeFunction(8, 6, 16) ],
+    [ COMPRESSED_RGBA_ASTC_8x8_KHR, makeComputeBlockRectSizeFunction(8, 8, 16) ],
+    [ COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR, makeComputeBlockRectSizeFunction(8, 8, 16) ],
+    [ COMPRESSED_RGBA_ASTC_10x5_KHR, makeComputeBlockRectSizeFunction(10, 5, 16) ],
+    [ COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR, makeComputeBlockRectSizeFunction(10, 5, 16) ],
+    [ COMPRESSED_RGBA_ASTC_10x6_KHR, makeComputeBlockRectSizeFunction(10, 6, 16) ],
+    [ COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR, makeComputeBlockRectSizeFunction(10, 6, 16) ],
+    [ COMPRESSED_RGBA_ASTC_10x8_KHR, makeComputeBlockRectSizeFunction(10, 8, 16) ],
+    [ COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR, makeComputeBlockRectSizeFunction(10, 8, 16) ],
+    [ COMPRESSED_RGBA_ASTC_10x10_KHR, makeComputeBlockRectSizeFunction(10, 10, 16) ],
+    [ COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR, makeComputeBlockRectSizeFunction(10, 10, 16) ],
+    [ COMPRESSED_RGBA_ASTC_12x10_KHR, makeComputeBlockRectSizeFunction(12, 10, 16) ],
+    [ COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR, makeComputeBlockRectSizeFunction(12, 10, 16) ],
+    [ COMPRESSED_RGBA_ASTC_12x12_KHR, makeComputeBlockRectSizeFunction(12, 12, 16) ],
+    [ COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR, makeComputeBlockRectSizeFunction(12, 12, 16) ],
+
+    [ COMPRESSED_SRGB_S3TC_DXT1_EXT, makeComputeBlockRectSizeFunction(4, 4, 8) ],
+    [ COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT, makeComputeBlockRectSizeFunction(4, 4, 8) ],
+    [ COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT, makeComputeBlockRectSizeFunction(4, 4, 16) ],
+    [ COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT, makeComputeBlockRectSizeFunction(4, 4, 16) ],
+  ]);
+
   /**
    * Gets the number of bytes per element for a given internalFormat / type
    * @param {number} internalFormat The internalFormat parameter from texImage2D etc..
@@ -184,6 +316,16 @@
       return info.bytesPerElement[ndx];
     }
     return info.bytesPerElement[0];
+  }
+
+  function getBytesForMipUncompressed(internalFormat, width, height, depth, type) {
+    const bytesPerElement = getBytesPerElementForInternalFormat(internalFormat, type);
+    return width * height * depth * bytesPerElement;
+  }
+
+  function getBytesForMip(internalFormat, width, height, depth, type) {
+    const fn = compressedTextureFunctions.get(internalFormat);
+    return fn ? fn(width, height, depth) : getBytesForMipUncompressed(internalFormat, width, height, depth, type);
   }
 
   function isTypedArray(v) {
@@ -364,8 +506,8 @@
         throw new Error(`unknown renderbuffer ${obj}`);
       }
 
-      const bytesPerElement = getBytesPerElementForInternalFormat(internalFormat);
-      const newSize = width * height * bytesPerElement * samples;
+      const bytesForMip = getBytesForMip(internalFormat, width, height, 1);
+      const newSize = bytesForMip * samples;
 
       memory.renderbuffer -= info.size;
       info.size = newSize;
@@ -408,12 +550,17 @@
       return info;
     }
 
-    function updateMipLevel(info, level, newMipSize) {
+    function updateMipLevel(info, target, level, newMipSize) {
       const oldSize = info.size;
 
+      const faceNdx = isCubemapFace(target)
+        ? target - TEXTURE_CUBE_MAP_POSITIVE_X
+        : 0;
+
       info.mips = info.mips || [];
-      info.size -= info.mips[level] || 0;
-      info.mips[level] = newMipSize;
+      info.mips[level] = info.mips[level] || [];
+      info.size -= info.mips[level][faceNdx] || 0;
+      info.mips[level][faceNdx] = newMipSize;
       info.size += newMipSize;
 
       memory.texture -= oldSize;
@@ -427,10 +574,12 @@
       info.depth = depth;
       info.internalFormat = internalFormat;
       info.type = undefined;
-      const bytesPerElement = getBytesPerElementForInternalFormat(internalFormat);
-      for (let level = 0; level < levels; ++level) {
-        const newMipSize = width * height * depth * bytesPerElement;
-        updateMipLevel(info, level, newMipSize);
+      const numFaces = target === TEXTURE_CUBE_MAP ? 6 : 1;
+      const baseFaceTarget = target === TEXTURE_CUBE_MAP ? TEXTURE_CUBE_MAP_POSITIVE_X : target;    for (let level = 0; level < levels; ++level) {
+        const newMipSize = getBytesForMip(internalFormat, width, height, depth);
+        for (let face = 0; face < numFaces; ++face) {
+          updateMipLevel(info, baseFaceTarget + face, level, newMipSize);
+        }
         width = Math.ceil(Math.max(width / 2, 1));
         height = Math.ceil(Math.max(height / 2, 1));
         depth = target === TEXTURE_2D_ARRAY ? depth : Math.ceil(Math.max(depth / 2, 1));
@@ -498,9 +647,8 @@
           info.internalFormat = internalFormat;
           info.type = UNSIGNED_BYTE;
         }
-        const bytesPerElement = getBytesPerElementForInternalFormat(internalFormat, UNSIGNED_BYTE);
-        const newMipSize = width * height * bytesPerElement;
-        updateMipLevel(info, level, newMipSize);
+        const newMipSize = getBytesForMip(internalFormat, width, height, 1, UNSIGNED_BYTE);
+        updateMipLevel(info, target, level, newMipSize);
       },
 
       createBuffer: makeCreateWrapper(ctx, 'buffer'),
@@ -514,6 +662,46 @@
       createTransformFeedback: makeCreateWrapper(ctx, 'transformFeedback'),
       createVertexArray: makeCreateWrapper(ctx, 'vertexArray'),
       createVertexArrayOES: makeCreateWrapper(ctx, 'vertexArray', 'createVertexArrayOES'),
+
+      // WebGL 1:
+      // void gl.compressedTexImage2D(target, level, internalformat, width, height, border, ArrayBufferView? pixels);
+      //
+      // Additionally available in WebGL 2:
+      // read from buffer bound to gl.PIXEL_UNPACK_BUFFER
+      // void gl.compressedTexImage2D(target, level, internalformat, width, height, border, GLsizei imageSize, GLintptr offset);
+      // void gl.compressedTexImage2D(target, level, internalformat, width, height, border,
+      //                              ArrayBufferView srcData, optional srcOffset, optional srcLengthOverride);
+      compressedTexImage2D(ctx, funcName, args) {
+        const [target, level, internalFormat, width, height] = args;
+        const info = getTextureInfo(target);
+        if (level === 0) {
+          info.width = width;
+          info.height = height;
+          info.depth = 1;
+          info.internalFormat = internalFormat;
+          info.type = UNSIGNED_BYTE;
+        }
+        const newMipSize = getBytesForMip(internalFormat, width, height, 1, UNSIGNED_BYTE);
+        updateMipLevel(info, target, level, newMipSize);
+      },
+
+      // read from buffer bound to gl.PIXEL_UNPACK_BUFFER
+      // void gl.compressedTexImage3D(target, level, internalformat, width, height, depth, border, GLsizei imageSize, GLintptr offset);
+      // void gl.compressedTexImage3D(target, level, internalformat, width, height, depth, border,
+      //                              ArrayBufferView srcData, optional srcOffset, optional srcLengthOverride);
+      compressedTexImage3D(ctx, funcName, args) {
+        const [target, level, internalFormat, width, height, depth] = args;
+        const info = getTextureInfo(target);
+        if (level === 0) {
+          info.width = width;
+          info.height = height;
+          info.depth = depth;
+          info.internalFormat = internalFormat;
+          info.type = UNSIGNED_BYTE;
+        }
+        const newMipSize = getBytesForMip(internalFormat, width, height, depth, UNSIGNED_BYTE);
+        updateMipLevel(info, target, level, newMipSize);
+      },
 
       deleteBuffer: makeDeleteWrapper('buffer', function(obj, info) {
         memory.buffer -= info.size;
@@ -552,15 +740,18 @@
         const [target] = args;
         const info = getTextureInfo(target);
         let {width, height, depth, internalFormat, type} = info;
-        const bytesPerElement = getBytesPerElementForInternalFormat(internalFormat, type);
         let level = 1;
 
-        while (!(width === 1 && height === 1 && (depth === 1 || target === TEXTURE_2D_ARRAY))) {
+        const numFaces = target === TEXTURE_CUBE_MAP ? 6 : 1;
+        const baseFaceTarget = target === TEXTURE_CUBE_MAP ? TEXTURE_CUBE_MAP_POSITIVE_X : target;      while (!(width === 1 && height === 1 && (depth === 1 || target === TEXTURE_2D_ARRAY))) {
           width = Math.ceil(Math.max(width / 2, 1));
           height = Math.ceil(Math.max(height / 2, 1));
           depth = target === TEXTURE_2D_ARRAY ? depth : Math.ceil(Math.max(depth / 2, 1));
-          const newMipSize = width * height * depth * bytesPerElement;
-          updateMipLevel(info, level++, newMipSize);
+          const newMipSize = getBytesForMip(internalFormat, width, height, depth, type);
+          for (let face = 0; face < numFaces; ++face) {
+            updateMipLevel(info, baseFaceTarget + face, level, newMipSize);
+          }
+          ++level;
         }
       },
 
@@ -627,9 +818,8 @@
           info.internalFormat = internalFormat;
           info.type = type;
         }
-        const bytesPerElement = getBytesPerElementForInternalFormat(internalFormat, type);
-        const newMipSize = width * height * bytesPerElement;
-        updateMipLevel(info, level, newMipSize);
+        const newMipSize = getBytesForMip(internalFormat, width, height, 1, type);
+        updateMipLevel(info, target, level, newMipSize);
       },
 
       // void gl.texImage3D(target, level, internalformat, width, height, depth, border, format, type, GLintptr offset);
@@ -653,9 +843,8 @@
           info.internalFormat = internalFormat;
           info.type = type;
         }
-        const bytesPerElement = getBytesPerElementForInternalFormat(internalFormat, type);
-        const newMipSize = width * height * depth * bytesPerElement;
-        updateMipLevel(info, level, newMipSize);
+        const newMipSize = getBytesForMip(internalFormat, width, height, depth, type);
+        updateMipLevel(info, target, level, newMipSize);
       },
 
       // void gl.texStorage2D(target, levels, internalformat, width, height);
