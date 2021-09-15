@@ -35,6 +35,45 @@ describe('tex-image tests', () => {
     tracker.deleteObjectAndMemory(texSize);
   });
 
+  it('test texImage2D cube map', () => {
+    const {gl} = createContext();
+    const tracker = new MemInfoTracker(gl, 'texture');
+
+    const tex1 = gl.createTexture();
+    tracker.addObjects(1);
+
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, tex1);
+
+    const faces = [
+      gl.TEXTURE_CUBE_MAP_POSITIVE_X,
+      gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
+      gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
+      gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
+      gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
+      gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
+    ];
+
+    const mip0Size = 32 * 32 * 4;
+    for (const face of faces) {
+      gl.texImage2D(face, 0, gl.RGBA, 32, 32, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      tracker.addMemory(mip0Size);
+    }
+    const level0Size = mip0Size * 6;
+
+    gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+    const faceSize = (
+      32 * 32 +   // level0
+      16 * 16 +   // level1
+      8 * 8 +     // level2
+      4 * 4 +     // level3
+      2 * 2 +     // level4
+      1 * 1) * 4; // level5
+    tracker.addMemory(faceSize * 6 - level0Size);
+
+    gl.deleteTexture(tex1);
+    tracker.deleteObjectAndMemory(faceSize * 6);
+  });
+
   it('test compressedTexImage2D', () => {
     const {gl} = createContext();
     const ext = gl.getExtension('WEBGL_compressed_texture_s3tc');

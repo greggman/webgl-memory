@@ -208,12 +208,17 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
     return info;
   }
 
-  function updateMipLevel(info, level, newMipSize) {
+  function updateMipLevel(info, target, level, newMipSize) {
     const oldSize = info.size;
 
+    const faceNdx = isCubemapFace(target)
+      ? target - TEXTURE_CUBE_MAP_POSITIVE_X
+      : 0;
+
     info.mips = info.mips || [];
-    info.size -= info.mips[level] || 0;
-    info.mips[level] = newMipSize;
+    info.mips[level] = info.mips[level] || [];
+    info.size -= info.mips[level][faceNdx] || 0;
+    info.mips[level][faceNdx] = newMipSize;
     info.size += newMipSize;
 
     memory.texture -= oldSize;
@@ -227,9 +232,13 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
     info.depth = depth;
     info.internalFormat = internalFormat;
     info.type = undefined;
+    const numFaces = target === TEXTURE_CUBE_MAP ? 6 : 1;
+    const baseFaceTarget = target === TEXTURE_CUBE_MAP ? TEXTURE_CUBE_MAP_POSITIVE_X : target;;
     for (let level = 0; level < levels; ++level) {
       const newMipSize = getBytesForMip(internalFormat, width, height, depth);
-      updateMipLevel(info, level, newMipSize);
+      for (let face = 0; face < numFaces; ++face) {
+        updateMipLevel(info, baseFaceTarget + face, level, newMipSize);
+      }
       width = Math.ceil(Math.max(width / 2, 1));
       height = Math.ceil(Math.max(height / 2, 1));
       depth = target === TEXTURE_2D_ARRAY ? depth : Math.ceil(Math.max(depth / 2, 1));
@@ -298,7 +307,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
         info.type = UNSIGNED_BYTE;
       }
       const newMipSize = getBytesForMip(internalFormat, width, height, 1, UNSIGNED_BYTE);
-      updateMipLevel(info, level, newMipSize);
+      updateMipLevel(info, target, level, newMipSize);
     },
 
     createBuffer: makeCreateWrapper(ctx, 'buffer'),
@@ -332,7 +341,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
         info.type = UNSIGNED_BYTE;
       }
       const newMipSize = getBytesForMip(internalFormat, width, height, 1, UNSIGNED_BYTE);
-      updateMipLevel(info, level, newMipSize);
+      updateMipLevel(info, target, level, newMipSize);
     },
 
     // read from buffer bound to gl.PIXEL_UNPACK_BUFFER
@@ -350,7 +359,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
         info.type = UNSIGNED_BYTE;
       }
       const newMipSize = getBytesForMip(internalFormat, width, height, depth, UNSIGNED_BYTE);
-      updateMipLevel(info, level, newMipSize);
+      updateMipLevel(info, target, level, newMipSize);
     },
 
     deleteBuffer: makeDeleteWrapper('buffer', function(obj, info) {
@@ -392,12 +401,17 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
       let {width, height, depth, internalFormat, type} = info;
       let level = 1;
 
+      const numFaces = target === TEXTURE_CUBE_MAP ? 6 : 1;
+      const baseFaceTarget = target === TEXTURE_CUBE_MAP ? TEXTURE_CUBE_MAP_POSITIVE_X : target;;
       while (!(width === 1 && height === 1 && (depth === 1 || target === TEXTURE_2D_ARRAY))) {
         width = Math.ceil(Math.max(width / 2, 1));
         height = Math.ceil(Math.max(height / 2, 1));
         depth = target === TEXTURE_2D_ARRAY ? depth : Math.ceil(Math.max(depth / 2, 1));
         const newMipSize = getBytesForMip(internalFormat, width, height, depth, type);
-        updateMipLevel(info, level++, newMipSize);
+        for (let face = 0; face < numFaces; ++face) {
+          updateMipLevel(info, baseFaceTarget + face, level, newMipSize);
+        }
+        ++level;
       }
     },
 
@@ -465,7 +479,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
         info.type = type;
       }
       const newMipSize = getBytesForMip(internalFormat, width, height, 1, type);
-      updateMipLevel(info, level, newMipSize);
+      updateMipLevel(info, target, level, newMipSize);
     },
 
     // void gl.texImage3D(target, level, internalformat, width, height, depth, border, format, type, GLintptr offset);
@@ -490,7 +504,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
         info.type = type;
       }
       const newMipSize = getBytesForMip(internalFormat, width, height, depth, type);
-      updateMipLevel(info, level, newMipSize);
+      updateMipLevel(info, target, level, newMipSize);
     },
 
     // void gl.texStorage2D(target, levels, internalformat, width, height);

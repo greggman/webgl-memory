@@ -89,10 +89,6 @@ The info returned is
    they really only mater if they are used on textures for which you
    call `generateMipmap` which I'm assuming is rare.
 
-4. Compressed textures are not currently supported
-
-   This is probably an easy fix.
-
 ## Example:
 
 [Click here for Example](https://jsgist.org/?src=57dafa41cb1d2d5bc1520832db49f946)
