@@ -69,8 +69,8 @@ The info returned is
 
    In WebGL if you delete a WebGLObject (a buffer, a texture, etc..),
    then, if that object is still attached to something else (a buffer
-   attached to a vertex array, a texture attached to a framebuffer),
-   a shader attached to a program, the object is not actually deleted
+   attached to a vertex array, a texture attached to a framebuffer,
+   a shader attached to a program), the object is not actually deleted
    until it's detached or the thing it's attached to is itself deleted.
 
    Tracking all of that in JavaScript is more work than I was willing
@@ -86,12 +86,12 @@ The info returned is
 3. `TEXTURE_BASE_LEVEL` and `TEXTURE_MAX_LEVEL` are ignored.
 
    I really don't know how often they are used but for tracking memory
-   they really only mater if they are used on textures for which you
+   they really only matter if they are used on textures for which you
    call `generateMipmap` which I'm assuming is rare.
 
 ## Example:
 
-[Click here for Example](https://jsgist.org/?src=57dafa41cb1d2d5bc1520832db49f946)
+[Click here for an Example](https://jsgist.org/?src=57dafa41cb1d2d5bc1520832db49f946)
 
 ## Development
 
@@ -110,7 +110,7 @@ npx servez
 and go to [`http://localhost:8080/test?src=true`](http://localhost:8080/test?src=true)
 
 `src=true` tells the test harness to use the unrolled source from the `src` folder
-where as without it uses `webgl-memory.js` in the root folder which is build using
+where as without it uses `webgl-memory.js` in the root folder which is built using
 `npm run build`.
 
 `grep=<some expression>` will limit the tests as in `...?src=true&grep=renderbuffer` only
@@ -121,10 +121,10 @@ runs the tests with `renderbuffer` in their description.
 [built version](https://greggman.github.io/webgl-memory/test/)
 [source version](https://greggman.github.io/webgl-memory/test/?src=true)
 
-## Opinion
+## Thoughts
 
-I'm not convinced this is the right way to do this. If I was making a
-webgl app and I wanted to know this stuff I'd track it myself by wrapping
+I'm not total convinced this is the right way to do this. If I was making a
+webgl app and I wanted to know this stuff I think I'd track it myself by wrapping
 my own creation functions.
 
 In other words, lets say I wanted to know how many times I call
