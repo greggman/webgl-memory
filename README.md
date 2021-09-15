@@ -85,7 +85,7 @@ The info returned is
 
 ## Example:
 
-[Click for Example]()
+[Click here for Example](https://jsgist.org/?src=57dafa41cb1d2d5bc1520832db49f946)
 
 ## Opinion
 
