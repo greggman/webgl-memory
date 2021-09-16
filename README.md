@@ -1,5 +1,7 @@
 # WebGL-Memory
 
+<img src="./webgl-memory.png" style="max-width: 640px">
+
 This is a WebGL-Memory tracker. You add the script to your page
 before you initialize WebGL and then for a given context
 you can ask how much WebGL memory you're using.
