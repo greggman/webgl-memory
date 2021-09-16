@@ -53,7 +53,7 @@ The info returned is
     sync: <count of sync objects, WebGL2 only>
     texture: <count of textures>
     transformFeedback: <count of transformfeedbacks, WebGL2 only>
-    vertexArrays: <count of vertexArrays, only if used or WebGL2>
+    vertexArray: <count of vertexArrays, only if used or WebGL2>
   }
 }
 ```
