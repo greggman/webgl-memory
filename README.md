@@ -43,7 +43,7 @@ The info returned is
     drawingbuffer: <bytes used by the canvas>
     total: <bytes used in total>
   },
-  resource: {
+  resources: {
     buffer: <count of buffers>,
     renderbuffer: <count of renderbuffers>
     program: <count of programs>
