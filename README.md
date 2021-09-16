@@ -1,6 +1,6 @@
 # WebGL-Memory
 
-This a WebGL-Memory tracker. You add the script to your page
+This is a WebGL-Memory tracker. You add the script to your page
 before you initialize WebGL and then for a given context
 you can ask how much WebGL memory you're using.
 
