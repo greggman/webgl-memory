@@ -1,4 +1,4 @@
-/* webgl-memory@0.0.2, license MIT */
+/* webgl-memory@1.0.1, license MIT */
 (function (factory) {
   typeof define === 'function' && define.amd ? define(factory) :
   factory();
@@ -332,6 +332,10 @@
     return v && v.buffer && v.buffer instanceof ArrayBuffer;
   }
 
+  function isBufferSource(v) {
+    return isTypedArray(v) || v instanceof ArrayBuffer;
+  }
+
   function computeDrawingbufferSize(gl) {
     // this will need to change for hi-color support
     const {width, height} = gl.canvas;
@@ -603,7 +607,7 @@
         let newSize = 0;
         if (length !== undefined) {
           newSize = length;
-        } else if (isTypedArray(src)) {
+        } else if (isBufferSource(src)) {
           newSize = src.byteLength;
         } else if (isNumber(src)) {
           newSize = src;
