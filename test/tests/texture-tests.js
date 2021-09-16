@@ -237,4 +237,33 @@ describe('tex-image tests', () => {
     tracker.deleteObjectAndMemory(mip0Size);
   });
 
+  it('test TEXTURE_BASE_LEVEL, TEXTURE_MAX_LEVEL', () => {
+    const {gl} = createContext2();
+    if (!gl) {
+      return;
+    }
+    const tracker = new MemInfoTracker(gl, 'texture');
+
+    const tex1 = gl.createTexture();
+    tracker.addObjects(1);
+
+    gl.bindTexture(gl.TEXTURE_2D, tex1);
+    gl.texImage2D(gl.TEXTURE_2D, 1, gl.RGBA, 16, 8, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    const mip1Size = 16 * 8 * 4;
+    tracker.addMemory(mip1Size);
+
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_BASE_LEVEL, 1);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAX_LEVEL, 3);
+    gl.generateMipmap(gl.TEXTURE_2D);
+
+    const texSize = 4 * (
+      16 * 8 +    // level1
+      8 * 4 +     // level2
+      4 * 2)      // level3
+    tracker.addMemory(texSize - mip1Size);
+
+    gl.deleteTexture(tex1);
+    tracker.deleteObjectAndMemory(texSize);
+  });
+
 });

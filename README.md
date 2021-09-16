@@ -83,12 +83,6 @@ The info returned is
 
    Given that it seemed okay to skip this for now.
 
-3. `TEXTURE_BASE_LEVEL` and `TEXTURE_MAX_LEVEL` are ignored.
-
-   I really don't know how often they are used but for tracking memory
-   they really only matter if they are used on textures for which you
-   call `generateMipmap` which I'm assuming is rare.
-
 ## Example:
 
 [Click here for an Example](https://jsgist.org/?src=57dafa41cb1d2d5bc1520832db49f946)
