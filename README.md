@@ -119,7 +119,7 @@ runs the tests with `renderbuffer` in their description.
 
 ## Thoughts
 
-I'm not total convinced this is the right way to do this. If I was making a
+I'm not totally convinced this is the right way to do this. If I was making a
 webgl app and I wanted to know this stuff I think I'd track it myself by wrapping
 my own creation functions.
 
@@ -165,7 +165,7 @@ const tex = makeTexture(gl);
 freeTexture(gl, tex);
 ```
 
-Also, even if this is an okay way to do it I'm not sure making it an extension was the best way
+Also, even if webgl-memory is an okay way to do it I'm not sure making it an extension was the best way
 vs just some library you call like `webglMemoryTracker.init(someWebGLRenderingContext)`. 
 I structured it this way just because I used [webgl-lint](https://greggman.github.io/webgl-lint) as
 the basis to get this working.
