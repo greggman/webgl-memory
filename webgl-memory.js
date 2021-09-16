@@ -1,4 +1,4 @@
-/* webgl-memory@1.0.1, license MIT */
+/* webgl-memory@1.0.2, license MIT */
 (function (factory) {
   typeof define === 'function' && define.amd ? define(factory) :
   factory();
@@ -528,6 +528,9 @@
     const TEXTURE_CUBE_MAP_POSITIVE_Z    = 0x8519;
     const TEXTURE_CUBE_MAP_NEGATIVE_Z    = 0x851A;
 
+    const TEXTURE_BASE_LEVEL             = 0x813C;
+    const TEXTURE_MAX_LEVEL              = 0x813D;
+
     const cubemapTargets = new Set([
       TEXTURE_CUBE_MAP_POSITIVE_X,
       TEXTURE_CUBE_MAP_NEGATIVE_X,
@@ -554,8 +557,9 @@
       return info;
     }
 
-    function updateMipLevel(info, target, level, newMipSize) {
+    function updateMipLevel(info, target, level, internalFormat, width, height, depth, type) {
       const oldSize = info.size;
+      const newMipSize = getBytesForMip(internalFormat, width, height, depth, type);
 
       const faceNdx = isCubemapFace(target)
         ? target - TEXTURE_CUBE_MAP_POSITIVE_X
@@ -563,8 +567,17 @@
 
       info.mips = info.mips || [];
       info.mips[level] = info.mips[level] || [];
-      info.size -= info.mips[level][faceNdx] || 0;
-      info.mips[level][faceNdx] = newMipSize;
+      const mipFaceInfo = info.mips[level][faceNdx] || {};
+      info.size -= mipFaceInfo.size || 0;
+      
+      mipFaceInfo.size = newMipSize;
+      mipFaceInfo.internalFormat = internalFormat;
+      mipFaceInfo.type = type;
+      mipFaceInfo.width = width;
+      mipFaceInfo.height = height;
+      mipFaceInfo.depth = depth;
+    
+      info.mips[level][faceNdx] = mipFaceInfo;
       info.size += newMipSize;
 
       memory.texture -= oldSize;
@@ -573,16 +586,10 @@
 
     function updateTexStorage(target, levels, internalFormat, width, height, depth) {
       const info = getTextureInfo(target);
-      info.width = width;
-      info.height = height;
-      info.depth = depth;
-      info.internalFormat = internalFormat;
-      info.type = undefined;
       const numFaces = target === TEXTURE_CUBE_MAP ? 6 : 1;
       const baseFaceTarget = target === TEXTURE_CUBE_MAP ? TEXTURE_CUBE_MAP_POSITIVE_X : target;    for (let level = 0; level < levels; ++level) {
-        const newMipSize = getBytesForMip(internalFormat, width, height, depth);
         for (let face = 0; face < numFaces; ++face) {
-          updateMipLevel(info, baseFaceTarget + face, level, newMipSize);
+          updateMipLevel(info, baseFaceTarget + face, level, internalFormat, width, height, depth);
         }
         width = Math.ceil(Math.max(width / 2, 1));
         height = Math.ceil(Math.max(height / 2, 1));
@@ -644,15 +651,7 @@
       copyTexImage2D(ctx, funcName, args) {
         const [target, level, internalFormat, x, y, width, height, border] = args;
         const info = getTextureInfo(target);
-        if (level === 0) {
-          info.width = width;
-          info.height = height;
-          info.depth = 1;
-          info.internalFormat = internalFormat;
-          info.type = UNSIGNED_BYTE;
-        }
-        const newMipSize = getBytesForMip(internalFormat, width, height, 1, UNSIGNED_BYTE);
-        updateMipLevel(info, target, level, newMipSize);
+        updateMipLevel(info, target, level, internalFormat, width, height, 1, UNSIGNED_BYTE);
       },
 
       createBuffer: makeCreateWrapper(ctx, 'buffer'),
@@ -678,15 +677,7 @@
       compressedTexImage2D(ctx, funcName, args) {
         const [target, level, internalFormat, width, height] = args;
         const info = getTextureInfo(target);
-        if (level === 0) {
-          info.width = width;
-          info.height = height;
-          info.depth = 1;
-          info.internalFormat = internalFormat;
-          info.type = UNSIGNED_BYTE;
-        }
-        const newMipSize = getBytesForMip(internalFormat, width, height, 1, UNSIGNED_BYTE);
-        updateMipLevel(info, target, level, newMipSize);
+        updateMipLevel(info, target, level, internalFormat, width, height, 1, UNSIGNED_BYTE);
       },
 
       // read from buffer bound to gl.PIXEL_UNPACK_BUFFER
@@ -696,15 +687,7 @@
       compressedTexImage3D(ctx, funcName, args) {
         const [target, level, internalFormat, width, height, depth] = args;
         const info = getTextureInfo(target);
-        if (level === 0) {
-          info.width = width;
-          info.height = height;
-          info.depth = depth;
-          info.internalFormat = internalFormat;
-          info.type = UNSIGNED_BYTE;
-        }
-        const newMipSize = getBytesForMip(internalFormat, width, height, depth, UNSIGNED_BYTE);
-        updateMipLevel(info, target, level, newMipSize);
+        updateMipLevel(info, target, level, internalFormat, width, height, depth, UNSIGNED_BYTE);
       },
 
       deleteBuffer: makeDeleteWrapper('buffer', function(obj, info) {
@@ -740,20 +723,20 @@
       }(ctx),
 
       generateMipmap(ctx, funcName, args) {
-        // TODO: handle TEXTURE_BASE_LEVEL
         const [target] = args;
         const info = getTextureInfo(target);
-        let {width, height, depth, internalFormat, type} = info;
-        let level = 1;
+        const baseMipNdx = info.parameters ? info.parameters.get(TEXTURE_BASE_LEVEL) || 0 : 0;
+        const maxMipNdx = info.parameters ? info.parameters.get(TEXTURE_MAX_LEVEL) || 1024 : 1024;
+        let {width, height, depth, internalFormat, type} = info.mips[baseMipNdx][0];
+        let level = baseMipNdx + 1;
 
         const numFaces = target === TEXTURE_CUBE_MAP ? 6 : 1;
-        const baseFaceTarget = target === TEXTURE_CUBE_MAP ? TEXTURE_CUBE_MAP_POSITIVE_X : target;      while (!(width === 1 && height === 1 && (depth === 1 || target === TEXTURE_2D_ARRAY))) {
+        const baseFaceTarget = target === TEXTURE_CUBE_MAP ? TEXTURE_CUBE_MAP_POSITIVE_X : target;      while (level <= maxMipNdx && !(width === 1 && height === 1 && (depth === 1 || target === TEXTURE_2D_ARRAY))) {
           width = Math.ceil(Math.max(width / 2, 1));
           height = Math.ceil(Math.max(height / 2, 1));
           depth = target === TEXTURE_2D_ARRAY ? depth : Math.ceil(Math.max(depth / 2, 1));
-          const newMipSize = getBytesForMip(internalFormat, width, height, depth, type);
           for (let face = 0; face < numFaces; ++face) {
-            updateMipLevel(info, baseFaceTarget + face, level, newMipSize);
+            updateMipLevel(info, baseFaceTarget + face, level, internalFormat, width, height, depth, type);
           }
           ++level;
         }
@@ -814,16 +797,7 @@
         }
 
         const info = getTextureInfo(target);
-        // save off for generateMipmap
-        if (level === 0) {
-          info.width = width;
-          info.height = height;
-          info.depth = 1;
-          info.internalFormat = internalFormat;
-          info.type = type;
-        }
-        const newMipSize = getBytesForMip(internalFormat, width, height, 1, type);
-        updateMipLevel(info, target, level, newMipSize);
+        updateMipLevel(info, target, level, internalFormat, width, height, 1, type);
       },
 
       // void gl.texImage3D(target, level, internalformat, width, height, depth, border, format, type, GLintptr offset);
@@ -839,16 +813,14 @@
       texImage3D(ctx, funcName, args) {
         let [target, level, internalFormat, width, height, depth, border, format, type] = args;
         const info = getTextureInfo(target);
-        // save off for generateMipmap
-        if (level === 0) {
-          info.width = width;
-          info.height = height;
-          info.depth = depth;
-          info.internalFormat = internalFormat;
-          info.type = type;
-        }
-        const newMipSize = getBytesForMip(internalFormat, width, height, depth, type);
-        updateMipLevel(info, target, level, newMipSize);
+        updateMipLevel(info, target, level, internalFormat, width, height, depth, type);
+      },
+
+      texParameteri(ctx, funcName, args) {
+        let [target, pname, value] = args;
+        const info = getTextureInfo(target);
+        info.parameters = info.parameters || new Map();
+        info.parameters.set(pname, value);
       },
 
       // void gl.texStorage2D(target, levels, internalformat, width, height);
