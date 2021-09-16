@@ -26,7 +26,7 @@ import {
 } from './texture-utils.js';
 import {
   computeDrawingbufferSize,
-  isTypedArray,
+  isBufferSource,
   isNumber,
 } from './utils.js';
 
@@ -262,7 +262,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
       let newSize = 0;
       if (length !== undefined) {
         newSize = length;
-      } else if (isTypedArray(src)) {
+      } else if (isBufferSource(src)) {
         newSize = src.byteLength;
       } else if (isNumber(src)) {
         newSize = src;
@@ -519,8 +519,6 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
       updateTexStorage(target, levels, internalFormat, width, height, depth);
     },
   };
-
-  const isArrayLike = a => Array.isArray(a) || isTypedArray(a);
 
   const extraWrappers = {
     getExtension(ctx, propertyName) {

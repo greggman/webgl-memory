@@ -71,6 +71,40 @@ describe('buffer tests', () => {
     tracker.deleteObjectAndMemory(size2);
   });
 
+  it('test bufferData with ArrayBuffer', () => {
+    const {gl} = createContext2();
+    if (!gl) {
+      return;
+    }
+    const tracker = new MemInfoTracker(gl, 'buffer');
+
+    const buf1 = gl.createBuffer();
+    tracker.addObjects(1);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf1);
+    const data1 = new Float32Array(25);
+    gl.bufferData(gl.ARRAY_BUFFER, data1.buffer, gl.STATIC_DRAW);
+    tracker.addMemory(data1.byteLength);
+
+    const data1a = new Uint16Array(37);
+    gl.bufferData(gl.ARRAY_BUFFER, data1a.buffer, gl.STATIC_DRAW);
+    tracker.addMemory(data1a.byteLength - data1.byteLength);
+
+    const buf2 = gl.createBuffer();
+    tracker.addObjects(1);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf2);
+    const data2 = new Float32Array(55);
+    gl.bufferData(gl.ARRAY_BUFFER, data2.buffer, gl.STATIC_DRAW);
+    tracker.addMemory(data2.byteLength);
+
+    gl.deleteBuffer(buf1);
+    tracker.deleteObjectAndMemory(data1a.byteLength);
+
+    gl.deleteBuffer(buf2);
+    tracker.deleteObjectAndMemory(data2.byteLength);
+  });
+
   it('test bufferData with size', () => {
     const {gl} = createContext();
     const tracker = new MemInfoTracker(gl, 'buffer');

@@ -7,6 +7,10 @@ export function isTypedArray(v) {
   return v && v.buffer && v.buffer instanceof ArrayBuffer;
 }
 
+export function isBufferSource(v) {
+  return isTypedArray(v) || v instanceof ArrayBuffer;
+}
+
 // ---------------------------------
 const FLOAT                         = 0x1406;
 const INT                           = 0x1404;
