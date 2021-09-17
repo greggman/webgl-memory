@@ -103,6 +103,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
       defaultVertexArray: {},
       webglObjectToMemory: new Map(),
     };
+    sharedState.webglObjectToMemory.set(sharedState.defaultVertexArray, {});
     sharedState.currentVertexArray = sharedState.defaultVertexArray;
     return sharedState;
   }
@@ -274,7 +275,10 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
       let obj;
       switch (target) {
         case ELEMENT_ARRAY_BUFFER:
-          obj = sharedState.currentVertexArray.elementArrayBuffer;
+          {
+            const info = webglObjectToMemory.get(sharedState.currentVertexArray);
+            obj = info.elementArrayBuffer;
+          }
           break;
         default:
           obj = bindings.get(target);
@@ -311,7 +315,8 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
       const [target, obj] = args;
       switch (target) {
         case ELEMENT_ARRAY_BUFFER:
-          sharedState.currentVertexArray.elementArrayBuffer = obj;
+          const info = webglObjectToMemory.get(sharedState.currentVertexArray);
+          info.elementArrayBuffer = obj;
           break;
         default:
           bindings.set(target, obj);
