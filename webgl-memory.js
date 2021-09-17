@@ -1,4 +1,4 @@
-/* webgl-memory@1.0.2, license MIT */
+/* webgl-memory@1.0.4, license MIT */
 (function (factory) {
   typeof define === 'function' && define.amd ? define(factory) :
   factory();
@@ -446,8 +446,11 @@
           renderbuffer: 0,
         },
         bindings: new Map(),
+        defaultVertexArray: {},
         webglObjectToMemory: new Map(),
       };
+      sharedState.webglObjectToMemory.set(sharedState.defaultVertexArray, {});
+      sharedState.currentVertexArray = sharedState.defaultVertexArray;
       return sharedState;
     }
 
@@ -517,6 +520,8 @@
       info.size = newSize;
       memory.renderbuffer += newSize;
     }
+
+    const ELEMENT_ARRAY_BUFFER           = 0x8893;
 
     const UNSIGNED_BYTE                  = 0x1401;
     const TEXTURE_CUBE_MAP               = 0x8513;
@@ -597,6 +602,11 @@
       }
     }
 
+    function handleBindVertexArray(gl, funcName, args) {
+      const [va] = args;
+      sharedState.currentVertexArray = va ? va : sharedState.defaultVertexArray;
+    }
+
     const preChecks = {};
     const postChecks = {
       // WebGL1
@@ -607,7 +617,18 @@
       //                   optional GLuint length = 0);
       bufferData(gl, funcName, args) {
         const [target, src, /* usage */, srcOffset = 0, length = undefined] = args;
-        const obj = bindings.get(target);
+        let obj;
+        switch (target) {
+          case ELEMENT_ARRAY_BUFFER:
+            {
+              const info = webglObjectToMemory.get(sharedState.currentVertexArray);
+              obj = info.elementArrayBuffer;
+            }
+            break;
+          default:
+            obj = bindings.get(target);
+            break;
+        }
         if (!obj) {
           throw new Error(`no buffer bound to ${target}`);
         }
@@ -632,9 +653,20 @@
         memory.buffer += newSize;
       },
 
+      bindVertexArray: handleBindVertexArray,
+      bindVertexArrayOES: handleBindVertexArray,
+
       bindBuffer(gl, funcName, args) {
         const [target, obj] = args;
-        bindings.set(target, obj);
+        switch (target) {
+          case ELEMENT_ARRAY_BUFFER:
+            const info = webglObjectToMemory.get(sharedState.currentVertexArray);
+            info.elementArrayBuffer = obj;
+            break;
+          default:
+            bindings.set(target, obj);
+            break;
+        }
       },
 
       bindRenderbuffer(gl, funcName, args) {
