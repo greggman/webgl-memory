@@ -22,13 +22,13 @@ describe('tex-image tests', () => {
     tracker.addMemory(mip0Size);
 
     gl.generateMipmap(gl.TEXTURE_2D);
-    const texSize = (
+    const texSize = 4 * (
       32 * 16 +   // level0
-      16 * 8 +    // level1
-      8 * 4 +     // level2
-      4 * 2 +     // level3
-      2 * 1 +     // level4
-      1 * 1) * 4; // level5
+      16 *  8 +   // level1
+       8 *  4 +   // level2
+       4 *  2 +   // level3
+       2 *  1 +   // level4
+       1 *  1);   // level5
     tracker.addMemory(texSize - mip0Size - mip1Size);
 
     gl.deleteTexture(tex1);
@@ -61,13 +61,13 @@ describe('tex-image tests', () => {
     const level0Size = mip0Size * 6;
 
     gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
-    const faceSize = (
+    const faceSize = 4 * (
       32 * 32 +   // level0
       16 * 16 +   // level1
-      8 * 8 +     // level2
-      4 * 4 +     // level3
-      2 * 2 +     // level4
-      1 * 1) * 4; // level5
+       8 *  8 +   // level2
+       4 *  4 +   // level3
+       2 *  2 +   // level4
+       1 *  1);   // level5
     tracker.addMemory(faceSize * 6 - level0Size);
 
     gl.deleteTexture(tex1);
@@ -258,8 +258,8 @@ describe('tex-image tests', () => {
 
     const texSize = 4 * (
       16 * 8 +    // level1
-      8 * 4 +     // level2
-      4 * 2)      // level3
+       8 * 4 +    // level2
+       4 * 2)     // level3
     tracker.addMemory(texSize - mip1Size);
 
     gl.deleteTexture(tex1);
