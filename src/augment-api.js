@@ -100,8 +100,10 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
         renderbuffer: 0,
       },
       bindings: new Map(),
+      defaultVertexArray: {},
       webglObjectToMemory: new Map(),
     };
+    sharedState.currentVertexArray = sharedState.defaultVertexArray;
     return sharedState;
   }
 
@@ -171,6 +173,8 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
     info.size = newSize;
     memory.renderbuffer += newSize;
   }
+
+  const ELEMENT_ARRAY_BUFFER           = 0x8893;
 
   const UNSIGNED_BYTE                  = 0x1401;
   const TEXTURE_CUBE_MAP               = 0x8513;
@@ -252,6 +256,11 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
     }
   }
 
+  function handleBindVertexArray(gl, funcName, args) {
+    const [va] = args;
+    sharedState.currentVertexArray = va ? va : sharedState.defaultVertexArray;
+  }
+
   const preChecks = {};
   const postChecks = {
     // WebGL1
@@ -262,7 +271,15 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
     //                   optional GLuint length = 0);
     bufferData(gl, funcName, args) {
       const [target, src, /* usage */, srcOffset = 0, length = undefined] = args;
-      const obj = bindings.get(target);
+      let obj;
+      switch (target) {
+        case ELEMENT_ARRAY_BUFFER:
+          obj = sharedState.currentVertexArray.elementArrayBuffer;
+          break;
+        default:
+          obj = bindings.get(target);
+          break;
+      }
       if (!obj) {
         throw new Error(`no buffer bound to ${target}`);
       }
@@ -287,9 +304,19 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
       memory.buffer += newSize;
     },
 
+    bindVertexArray: handleBindVertexArray,
+    bindVertexArrayOES: handleBindVertexArray,
+
     bindBuffer(gl, funcName, args) {
       const [target, obj] = args;
-      bindings.set(target, obj);
+      switch (target) {
+        case ELEMENT_ARRAY_BUFFER:
+          sharedState.currentVertexArray.elementArrayBuffer = obj;
+          break;
+        default:
+          bindings.set(target, obj);
+          break;
+      }
     },
 
     bindRenderbuffer(gl, funcName, args) {
