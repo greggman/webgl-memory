@@ -95,15 +95,21 @@ export function glTypeToTypedArray(type) {
   return glTypeToTypedArrayMap.get(type);
 }
 
-export function computeDrawingbufferSize(gl) {
+export function getDrawingbufferInfo(gl) {
+  return {
+    samples: gl.getParameter(gl.SAMPLES),
+    depthBits: gl.getParameter(gl.DEPTH_BITS),
+    contextAttributes: gl.getContextAttributes(),
+  };
+}
+export function computeDrawingbufferSize(gl, drawingBufferInfo) {
   // this will need to change for hi-color support
+  const {samples, depthBits, contextAttributes} = drawingBufferInfo;
   const {width, height} = gl.canvas;
   const size = width * height * 4;
-  const samples = gl.getParameter(gl.SAMPLES);
-  const attr = gl.getContextAttributes();
-  const depth = attr.depth ? 1 : 0;
-  const stencil = attr.stencil ? 1 : 0;
-  const depthSize = Math.min(stencil + gl.getParameter(gl.DEPTH_BITS) > 16 ? 4 : 2, 4);
+  const depth = contextAttributes.depth ? 1 : 0;
+  const stencil = contextAttributes.stencil ? 1 : 0;
+  const depthSize = Math.min(stencil + depthBits > 16 ? 4 : 2, 4);
   return size + size * samples + size * depth * depthSize;
 }
 

@@ -1,12 +1,12 @@
 import {assertEqual, assertTruthy} from '../assert.js';
-import {computeDrawingbufferSize} from '../../src/utils.js';
+import {computeDrawingbufferSize, getDrawingbufferInfo} from '../../src/utils.js';
 
 export class MemInfoTracker {
   constructor(gl, type) {
     assertTruthy(gl);
     this.ext = gl.getExtension('GMAN_webgl_memory');
     assertTruthy(this.ext);
-    this.drawingbufferSize = computeDrawingbufferSize(gl);
+    this.drawingbufferSize = computeDrawingbufferSize(gl, getDrawingbufferInfo(gl));
     this.numObjects = 0;
     this.memSize = 0;
     this.type = type;

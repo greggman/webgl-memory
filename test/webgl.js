@@ -1,16 +1,19 @@
 /* global document */
-import {computeDrawingbufferSize} from '../src/utils.js';
+import {
+  computeDrawingbufferSize,
+  getDrawingbufferInfo,
+} from '../src/utils.js';
 
 export function createContext() {
   const gl = document.createElement('canvas').getContext('webgl');
   const ext = gl.getExtension('GMAN_webgl_memory');
-  return { gl, ext, drawingbufferSize: computeDrawingbufferSize(gl) };
+  return { gl, ext, drawingbufferSize: computeDrawingbufferSize(gl, getDrawingbufferInfo(gl)) };
 }
 
 export function createContext2() {
   const gl = document.createElement('canvas').getContext('webgl2');
   const ext = gl ? gl.getExtension('GMAN_webgl_memory') : null;
-  return { gl, ext, drawingbufferSize: computeDrawingbufferSize(gl) };
+  return { gl, ext, drawingbufferSize: computeDrawingbufferSize(gl, getDrawingbufferInfo(gl)) };
 }
 
 function resetContext(gl) {

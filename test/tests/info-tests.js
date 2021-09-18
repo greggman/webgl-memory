@@ -1,4 +1,4 @@
-import { computeDrawingbufferSize } from '../../src/utils.js';
+import { computeDrawingbufferSize, getDrawingbufferInfo } from '../../src/utils.js';
 import assert, {assertEqual, assertNotEqual, assertTruthy} from '../assert.js';
 import {describe, it} from '../mocha-support.js';
 import {createContext, createContext2} from '../webgl.js';
@@ -69,7 +69,7 @@ describe('info tests', () => {
     gl.canvas.height = 75;
 
     {
-      const newDrawingbufferSize = computeDrawingbufferSize(gl);
+      const newDrawingbufferSize = computeDrawingbufferSize(gl, getDrawingbufferInfo(gl));
       const info = ext.getMemoryInfo();
       const {memory} = info;
       assertEqual(memory.drawingbuffer, newDrawingbufferSize);

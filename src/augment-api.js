@@ -26,6 +26,7 @@ import {
 } from './texture-utils.js';
 import {
   computeDrawingbufferSize,
+  getDrawingbufferInfo,
   isBufferSource,
   isNumber,
 } from './utils.js';
@@ -70,6 +71,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
   const origGLErrorFn = options.origGLErrorFn || ctx.getError;
 
   function createSharedState(ctx) {
+    const drawingBufferInfo = getDrawingbufferInfo(ctx);
     const sharedState = {
       baseContext: ctx,
       config: options,
@@ -78,7 +80,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
         gman_webgl_memory: {
           ctx: {
             getMemoryInfo() {
-              const drawingbuffer = computeDrawingbufferSize(ctx);
+              const drawingbuffer = computeDrawingbufferSize(ctx, drawingBufferInfo);
               return {
                 memory: {
                   ...memory,
