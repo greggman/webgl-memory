@@ -98,7 +98,7 @@ The info returned is
    be a *texture complete* subset of mip levels.
    
    WebGL-memory does not report this difference
-   because it's up to the implemention what really happens behind the scenes.
+   because it's up to the implementation what really happens behind the scenes.
    In general though, `texStorage2D/3D` has a much higher probablility
    of using less memory overall.
    
