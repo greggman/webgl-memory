@@ -84,6 +84,37 @@ The info returned is
    the issue by watching your resources counts climb.
 
    Given that it seemed okay to skip this for now.
+   
+3. `texImage2D/3D` vs `texStorage2D/3D`
+
+   Be aware that `texImage2D/3D` *may* require double the memory of
+   `texStorage2D/3D`. 
+
+   Based on the design of `texImage2D/3D`, every mip level can have a
+   different size/format and so until it's time to draw, there is
+   no way to know if those levels will be updated by the app to be
+   matching. Further, in WebGL2, there's no way to know before draw time
+   if the app will set `TEXTURE_BASE_LEVEL` and `TEXTURE_MAX_LEVEL` to
+   be a *texture complete* subset of mip levels.
+   
+   WebGL-memory does not report this difference
+   because it's up to the implemention what really happens behind the scenes.
+   In general though, `texStorage2D/3D` has a much higher probablility
+   of using less memory overall.
+   
+4. `ELEMENT_ARRAY_BUFFER`
+
+   Buffers used with `ELEMENT_ARRAY_BUFFER` may need a second copy in ram.
+   This is because WebGL requires no out of bounds memory access (eg,
+   you have a buffer with 10 vertices but you have an index greater >= 10).
+   This can be handled in 2 ways (1) if the driver advertizes "robustness"
+   then rely on the driver (2) keep a copy of that data in ram and check
+   before draw time that no indices are out of range.
+   
+   WebGL-memory does not report this difference because it's up to the
+   implementation. Further, unlike the texture issue above there is
+   nothing an app can do. Forunately such buffers are usually
+   a small percent of the data used by most WebGL apps.
 
 ## Example:
 
