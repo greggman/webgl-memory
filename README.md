@@ -102,6 +102,12 @@ The info returned is
    In general though, `texStorage2D/3D` has a much higher probablility
    of using less memory overall.
    
+   The tradeoff for using `texStorage` is that the texture's size is immutable. 
+   So, for eample, if you wanted to wrap a user's image to a cube, and then
+   change that image when the user selects a different sized image, with `texImage`
+   you can just upload the new image to the existing texture. With `texStorage`
+   you'd be required to create a new texture. 
+   
 4. `ELEMENT_ARRAY_BUFFER`
 
    Buffers used with `ELEMENT_ARRAY_BUFFER` may need a second copy in ram.
