@@ -177,4 +177,39 @@ describe('buffer tests', () => {
     tracker.deleteObjectAndMemory(size2);
   });
 
+  it ('test bindBufferBase/bindBufferRange', () => {
+    const {gl} = createContext2();
+    if (!gl) {
+      return;
+    }
+    const tracker = new MemInfoTracker(gl, 'buffer');
+
+    const buf1 = gl.createBuffer();
+    tracker.addObjects(1);
+
+    gl.bindBufferBase(gl.UNIFORM_BUFFER, 0, buf1);
+    const data1 = new Float32Array(25);
+    gl.bufferData(gl.UNIFORM_BUFFER, data1, gl.STATIC_DRAW);
+    tracker.addMemory(data1.byteLength);
+
+    const data1a = new Uint16Array(37);
+    gl.bufferData(gl.UNIFORM_BUFFER, data1a, gl.STATIC_DRAW);
+    tracker.addMemory(data1a.byteLength - data1.byteLength);
+
+    const buf2 = gl.createBuffer();
+    tracker.addObjects(1);
+
+    const data2 = new Float32Array(55);
+    gl.bindBufferRange(gl.TRANSFORM_FEEDBACK_BUFFER, 0, buf2, 0, data2.byteLength);    
+    gl.bufferData(gl.TRANSFORM_FEEDBACK_BUFFER, data2, gl.STATIC_DRAW);
+    tracker.addMemory(data2.byteLength);
+
+    gl.deleteBuffer(buf1);
+    tracker.deleteObjectAndMemory(data1a.byteLength);
+
+    gl.deleteBuffer(buf2);
+    tracker.deleteObjectAndMemory(data2.byteLength);
+
+  });
+
 });
