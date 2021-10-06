@@ -119,7 +119,7 @@ The info returned is
    
    WebGL-memory does not report this difference because it's up to the
    implementation. Further, unlike the texture issue above there is
-   nothing an app can do. Forunately such buffers are usually
+   nothing an app can do. Fortunately such buffers are usually
    a small percent of the data used by most WebGL apps.
 
 ## Example:
