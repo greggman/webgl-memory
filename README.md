@@ -73,7 +73,8 @@ The info returned is
    then, if that object is still attached to something else (a buffer
    attached to a vertex array, a texture attached to a framebuffer,
    a shader attached to a program), the object is not actually deleted
-   until it's detached or the thing it's attached to is itself deleted.
+   until it's detached or the thing it's attached to is itself deleted  
+   <sub>unless the thing it's attached to is currently bound. It's complicated 😭</sub>
 
    Tracking all of that in JavaScript is more work than I was willing
    to put in ATM. My belief is that the stuff that is still attached
@@ -103,7 +104,7 @@ The info returned is
    of using less memory overall.
    
    The tradeoff for using `texStorage` is that the texture's size is immutable. 
-   So, for eample, if you wanted to wrap a user's image to a cube, and then
+   So, for example, if you wanted to wrap a user's image to a cube, and then
    change that image when the user selects a different sized image, with `texImage`
    you can just upload the new image to the existing texture. With `texStorage`
    you'd be required to create a new texture. 
