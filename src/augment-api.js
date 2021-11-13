@@ -417,9 +417,10 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
         return;
       }
       resources.sync = 0;
-      return function(ctx, funcName, args, returnValue) {
+      return function(ctx, funcName, args, webglObj) {
         ++resources.sync;
-        webglObjectToMemory.set(obj, {
+
+        webglObjectToMemory.set(webglObj, {
           size: 0,
         });
       };

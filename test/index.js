@@ -8,6 +8,7 @@ import './tests/program-tests.js';
 import './tests/renderbuffer-tests.js';
 import './tests/sampler-tests.js';
 import './tests/shader-tests.js';
+import './tests/sync-tests.js';
 import './tests/texture-tests.js';
 import './tests/transformfeedback-tests.js';
 import './tests/vertexarray-tests.js';
