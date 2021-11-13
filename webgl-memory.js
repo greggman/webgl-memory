@@ -1,4 +1,4 @@
-/* webgl-memory@1.0.6, license MIT */
+/* webgl-memory@1.0.7, license MIT */
 (function (factory) {
   typeof define === 'function' && define.amd ? define(factory) :
   factory();
@@ -767,9 +767,10 @@
           return;
         }
         resources.sync = 0;
-        return function(ctx, funcName, args, returnValue) {
+        return function(ctx, funcName, args, webglObj) {
           ++resources.sync;
-          webglObjectToMemory.set(obj, {
+
+          webglObjectToMemory.set(webglObj, {
             size: 0,
           });
         };
