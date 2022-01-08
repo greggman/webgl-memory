@@ -3,7 +3,7 @@
   "version": "1.0.7",
   "description": "A WebGL memory tracker",
   "main": "webgl-memory.js",
-  "module": "src/webgl-memory.js",
+  "module": "webgl-memory.js",
   "scripts": {
     "build": "rollup -c",
     "eslint": "eslint \"**/*.js\"",
@@ -33,5 +33,8 @@
     "eslint-plugin-require-trailing-comma": "0.0.1",
     "rollup": "^2.23.0",
     "rollup-plugin-node-resolve": "^5.2.0"
+  },
+  "dependencies": {
+    "package.json": "^2.0.1"
   }
 }
