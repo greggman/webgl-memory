@@ -81,7 +81,7 @@ The info returned is
    is usually not a problem because either (a) you'll delete the objects
    that are holding the attachments (b) you'll detach the attachments
    by binding new ones (c) you have a leak where you're creating more and
-   more of these objects the hold attachments in which case you can find
+   more of these objects that hold attachments in which case you can find
    the issue by watching your resources counts climb.
 
    Given that it seemed okay to skip this for now.
@@ -100,7 +100,7 @@ The info returned is
    
    WebGL-memory does not report this difference
    because it's up to the implementation what really happens behind the scenes.
-   In general though, `texStorage2D/3D` has a much higher probablility
+   In general though, `texStorage2D/3D` has a much higher probability
    of using less memory overall.
    
    The tradeoff for using `texStorage` is that the texture's size is immutable. 
