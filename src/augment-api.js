@@ -68,6 +68,12 @@ import {
  * @param {string} nameOfClass (eg, webgl, webgl2, OES_texture_float)
  */
 export function augmentAPI(ctx, nameOfClass, options = {}) {
+  // Only augment this object once
+  if (ctx.__webgl_memory_augmented) {
+    return ctx;
+  }
+  ctx.__webgl_memory_augmented = true;
+
   const origGLErrorFn = options.origGLErrorFn || ctx.getError;
 
   function createSharedState(ctx) {
@@ -75,23 +81,20 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
     const sharedState = {
       baseContext: ctx,
       config: options,
-      apis: {
-        // custom extension
+      customExtensions: {
         gman_webgl_memory: {
-          ctx: {
-            getMemoryInfo() {
-              const drawingbuffer = computeDrawingbufferSize(ctx, drawingBufferInfo);
-              return {
-                memory: {
-                  ...memory,
-                  drawingbuffer,
-                  total: drawingbuffer + memory.buffer + memory.texture + memory.renderbuffer,
-                }, 
-                resources: {
-                  ...resources,
-                }
-              };
-            },
+          getMemoryInfo() {
+            const drawingbuffer = computeDrawingbufferSize(ctx, drawingBufferInfo);
+            return {
+              memory: {
+                ...memory,
+                drawingbuffer,
+                total: drawingbuffer + memory.buffer + memory.texture + memory.renderbuffer,
+              },
+              resources: {
+                ...resources,
+              },
+            };
           },
         },
       },
@@ -105,8 +108,24 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
       defaultVertexArray: {},
       webglObjectToMemory: new Map(),
     };
-    sharedState.webglObjectToMemory.set(sharedState.defaultVertexArray, {});
-    sharedState.currentVertexArray = sharedState.defaultVertexArray;
+
+    function resetSharedState() {
+      sharedState.bindings.clear();
+      sharedState.webglObjectToMemory.clear();
+      sharedState.webglObjectToMemory.set(sharedState.defaultVertexArray, {});
+      sharedState.currentVertexArray = sharedState.defaultVertexArray;
+      [sharedState.resources, sharedState.memory].forEach(function(obj) {
+        for (let prop in obj) {
+          obj[prop] = 0;
+        }
+      });
+    }
+
+    if (ctx.canvas) {
+      ctx.canvas.addEventListener('webglcontextlost', resetSharedState);
+    }
+
+    resetSharedState();
     return sharedState;
   }
 
@@ -114,16 +133,12 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
   options.sharedState = sharedState;
 
   const {
-    apis,
-    baseContext,
     bindings,
-    config,
     memory,
     resources,
     webglObjectToMemory,
+    customExtensions,
   } = sharedState;
-
-  const origFuncs = {};
 
   function noop() {
   }
@@ -230,14 +245,14 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
     info.mips[level] = info.mips[level] || [];
     const mipFaceInfo = info.mips[level][faceNdx] || {}
     info.size -= mipFaceInfo.size || 0;
-    
+
     mipFaceInfo.size = newMipSize;
     mipFaceInfo.internalFormat = internalFormat;
     mipFaceInfo.type = type;
     mipFaceInfo.width = width;
     mipFaceInfo.height = height;
     mipFaceInfo.depth = depth;
-  
+
     info.mips[level][faceNdx] = mipFaceInfo;
     info.size += newMipSize;
 
@@ -546,15 +561,14 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
       const origFn = ctx[propertyName];
       ctx[propertyName] = function(...args) {
         const extensionName = args[0].toLowerCase();
-        const api = apis[extensionName];
-        if (api) {
-          return api.ctx;
+        let ext = customExtensions[extensionName];
+        if (!ext) {
+          ext = origFn.call(ctx, ...args);
+          if (ext) {
+            augmentAPI(ext, extensionName, { ...options, origGLErrorFn });
+          }
         }
-        const ext = origFn.call(ctx, ...args);
-        if (ext) {
-          augmentAPI(ext, extensionName, {...options, origGLErrorFn});
-        }
-        return ext;
+        return ext || null;
       };
     },
   };
@@ -570,7 +584,6 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
     ctx[funcName] = function(...args) {
       preCheck(ctx, funcName, args);
       const result = origFn.call(ctx, ...args);
-      const gl = baseContext;
       postCheck(ctx, funcName, args, result);
       return result;
     };
@@ -583,11 +596,8 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
   // Wrap each function
   for (const propertyName in ctx) {
     if (typeof ctx[propertyName] === 'function') {
-      origFuncs[propertyName] = ctx[propertyName];
       makeErrorWrapper(ctx, propertyName);
     }
   }
-
-  apis[nameOfClass.toLowerCase()] = { ctx, origFuncs };
 }
 
