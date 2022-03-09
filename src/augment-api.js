@@ -170,9 +170,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
 
     if (ctx.canvas) {
       ctx.canvas.addEventListener('webglcontextlost', handleContextLost);
-      ctx.canvas.addEventListener('contextlost', handleContextLost);
       ctx.canvas.addEventListener('webglcontextrestored', handleContextRestored);
-      ctx.canvas.addEventListener('contextrestored', handleContextRestored);
     }
 
     resetSharedState();

@@ -15,8 +15,8 @@ function createExposedPromise() {
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 describe('webgl context loss tests', () => {
-  it('test context loss', async () => {
-    const {gl} = createContext();
+
+  async function testContextLost(gl) {
     const contextLostExposedPromise = createExposedPromise();
     const contextRestoredExposedPromise = createExposedPromise();
 
@@ -104,5 +104,20 @@ describe('webgl context loss tests', () => {
 
     newOESVertexArrayExt.createVertexArrayOES();
     assertEqual(memExt.getMemoryInfo().resources.vertexArray, 1);
+  }
+
+  it('test context loss', async () => {
+    const {gl} = createContext();
+    await testContextLost(gl);
   });
+
+  it('test context loss OffscreenCanvas', async () => {
+    if (typeof OffscreenCanvas === 'undefined') {
+      return;
+    }
+
+    const gl = new OffscreenCanvas(300, 150).getContext('webgl');
+    await testContextLost(gl);
+  });
+
 });
