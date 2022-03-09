@@ -22,6 +22,7 @@ export class MemInfoTracker {
   }
   addObjects(deltaObjects = 1) {
     this.numObjects += deltaObjects;
+    this.check();
   }
   addMemory(deltaMemory = 0) {
     this.memSize += deltaMemory;
