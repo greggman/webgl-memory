@@ -1,4 +1,4 @@
-/* webgl-memory@1.0.9, license MIT */
+/* webgl-memory@1.0.10, license MIT */
 (function (factory) {
   typeof define === 'function' && define.amd ? define(factory) :
   factory();
@@ -411,6 +411,9 @@
   ** MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
   */
 
+
+  const augmentedSet = new Set();
+
   /**
    * Given a WebGL context replaces all the functions with wrapped functions
    * that call gl.getError after every command
@@ -419,6 +422,12 @@
    * @param {string} nameOfClass (eg, webgl, webgl2, OES_texture_float)
    */
   function augmentAPI(ctx, nameOfClass, options = {}) {
+
+    if (augmentedSet.has(ctx)) {
+      return ctx;
+    }
+    augmentedSet.add(ctx);
+
     const origGLErrorFn = options.origGLErrorFn || ctx.getError;
 
     function createSharedState(ctx) {
@@ -456,8 +465,66 @@
         defaultVertexArray: {},
         webglObjectToMemory: new Map(),
       };
-      sharedState.webglObjectToMemory.set(sharedState.defaultVertexArray, {});
-      sharedState.currentVertexArray = sharedState.defaultVertexArray;
+
+      const unRestorableAPIs = new Set([
+        'webgl',
+        'webgl2',
+        'webgl_lose_context',
+      ]);
+
+      function resetSharedState() {
+        sharedState.bindings.clear();
+        sharedState.webglObjectToMemory.clear();
+        sharedState.webglObjectToMemory.set(sharedState.defaultVertexArray, {});
+        sharedState.currentVertexArray = sharedState.defaultVertexArray;
+        [sharedState.resources, sharedState.memory].forEach(function(obj) {
+          for (let prop in obj) {
+            obj[prop] = 0;
+          }
+        });
+      }
+
+      function handleContextLost() {
+        // Issues:
+        //   * all resources are lost.
+        //     Solution: handled by resetSharedState
+        //   * all functions are no-op
+        //     Solutions: 
+        //        * swap all functions for noop
+        //          (not so easy because some functions return values)
+        //        * wrap all functions is a isContextLost check forwarder
+        //          (slow? and same as above)
+        //        * have each function manually check for context lost
+        //          (simple but repetitive)
+        //   * all extensions are lost
+        //      Solution: For these we go through and restore all the functions
+        //         on each extension
+        resetSharedState();
+        sharedState.isContextLost = true;
+
+        // restore all original functions for extensions since
+        // user will have to get new extensions.
+        for (const [name, {ctx, origFuncs}] of [...Object.entries(sharedState.apis)]) {
+          if (!unRestorableAPIs.has(name) && origFuncs) {
+            augmentedSet.delete(ctx);
+            for (const [funcName, origFn] of Object.entries(origFuncs)) {
+              ctx[funcName] = origFn;
+            }
+            delete apis[name];
+          }
+        }
+      }
+
+      function handleContextRestored() {
+        sharedState.isContextLost = false;
+      }
+
+      if (ctx.canvas) {
+        ctx.canvas.addEventListener('webglcontextlost', handleContextLost);
+        ctx.canvas.addEventListener('webglcontextrestored', handleContextRestored);
+      }
+
+      resetSharedState();
       return sharedState;
     }
 
@@ -486,6 +553,9 @@
       }
       resources[typeName] = 0;
       return function(ctx, funcName, args, webglObj) {
+        if (sharedState.isContextLost) {
+          return null;
+        }
         ++resources[typeName];
         webglObjectToMemory.set(webglObj, {
           size: 0,
@@ -499,6 +569,9 @@
         return;
       }
       return function(ctx, funcName, args) {
+        if (sharedState.isContextLost) {
+          return;
+        }
         const [obj] = args;
         const info = webglObjectToMemory.get(obj);
         if (info) {
@@ -511,6 +584,9 @@
     }
 
     function updateRenderbuffer(target, samples, internalFormat, width, height) {
+      if (sharedState.isContextLost) {
+        return;
+      }
       const obj = bindings.get(target);
       if (!obj) {
         throw new Error(`no renderbuffer bound to ${target}`);
@@ -581,14 +657,14 @@
       info.mips[level] = info.mips[level] || [];
       const mipFaceInfo = info.mips[level][faceNdx] || {};
       info.size -= mipFaceInfo.size || 0;
-      
+
       mipFaceInfo.size = newMipSize;
       mipFaceInfo.internalFormat = internalFormat;
       mipFaceInfo.type = type;
       mipFaceInfo.width = width;
       mipFaceInfo.height = height;
       mipFaceInfo.depth = depth;
-    
+
       info.mips[level][faceNdx] = mipFaceInfo;
       info.size += newMipSize;
 
@@ -610,11 +686,17 @@
     }
 
     function handleBindVertexArray(gl, funcName, args) {
+      if (sharedState.isContextLost) {
+        return;
+      }
       const [va] = args;
       sharedState.currentVertexArray = va ? va : sharedState.defaultVertexArray;
     }
 
     function handleBufferBinding(target, obj) {
+      if (sharedState.isContextLost) {
+        return;
+      }
       switch (target) {
         case ELEMENT_ARRAY_BUFFER:
           const info = webglObjectToMemory.get(sharedState.currentVertexArray);
@@ -635,6 +717,9 @@
       //   void bufferData(GLenum target, [AllowShared] ArrayBufferView srcData, GLenum usage, GLuint srcOffset,
       //                   optional GLuint length = 0);
       bufferData(gl, funcName, args) {
+        if (sharedState.isContextLost) {
+          return;
+        }
         const [target, src, /* usage */, srcOffset = 0, length = undefined] = args;
         let obj;
         switch (target) {
@@ -691,17 +776,26 @@
       },
 
       bindRenderbuffer(gl, funcName, args) {
+        if (sharedState.isContextLost) {
+         return;
+        }
         const [target, obj] = args;
         bindings.set(target, obj);
       },
 
       bindTexture(gl, funcName, args) {
+        if (sharedState.isContextLost) {
+         return;
+        }
         const [target, obj] = args;
         bindings.set(target, obj);
       },
 
       // void gl.copyTexImage2D(target, level, internalformat, x, y, width, height, border);
       copyTexImage2D(ctx, funcName, args) {
+        if (sharedState.isContextLost) {
+          return;
+        }
         const [target, level, internalFormat, x, y, width, height, border] = args;
         const info = getTextureInfo(target);
         updateMipLevel(info, target, level, internalFormat, width, height, 1, UNSIGNED_BYTE);
@@ -728,6 +822,9 @@
       // void gl.compressedTexImage2D(target, level, internalformat, width, height, border,
       //                              ArrayBufferView srcData, optional srcOffset, optional srcLengthOverride);
       compressedTexImage2D(ctx, funcName, args) {
+        if (sharedState.isContextLost) {
+          return;
+        }
         const [target, level, internalFormat, width, height] = args;
         const info = getTextureInfo(target);
         updateMipLevel(info, target, level, internalFormat, width, height, 1, UNSIGNED_BYTE);
@@ -738,6 +835,9 @@
       // void gl.compressedTexImage3D(target, level, internalformat, width, height, depth, border,
       //                              ArrayBufferView srcData, optional srcOffset, optional srcLengthOverride);
       compressedTexImage3D(ctx, funcName, args) {
+        if (sharedState.isContextLost) {
+          return;
+        }
         const [target, level, internalFormat, width, height, depth] = args;
         const info = getTextureInfo(target);
         updateMipLevel(info, target, level, internalFormat, width, height, depth, UNSIGNED_BYTE);
@@ -763,6 +863,9 @@
       deleteVertexArrayOES: makeDeleteWrapper('vertexArray', noop, 'deleteVertexArrayOES'),
 
       fenceSync: function(ctx) {
+        if (sharedState.isContextLost) {
+          return;
+        }
         if (!ctx.fenceSync) {
           return;
         }
@@ -777,6 +880,9 @@
       }(ctx),
 
       generateMipmap(ctx, funcName, args) {
+        if (sharedState.isContextLost) {
+          return;
+        }
         const [target] = args;
         const info = getTextureInfo(target);
         const baseMipNdx = info.parameters ? info.parameters.get(TEXTURE_BASE_LEVEL) || 0 : 0;
@@ -797,6 +903,9 @@
       },
 
       getSupportedExtensions(ctx, funcName, args, result) {
+        if (sharedState.isContextLost) {
+          return;
+        }
         result.push('GMAN_webgl_memory');
       },
 
@@ -819,6 +928,9 @@
       },
 
       texImage2D(ctx, funcName, args) {
+        if (sharedState.isContextLost) {
+          return;
+        }
         // WebGL1:
         // void gl.texImage2D(target, level, internalformat, width, height, border, format, type, ArrayBufferView? pixels);
         // void gl.texImage2D(target, level, internalformat, format, type, ImageData? pixels);
@@ -865,12 +977,18 @@
       // void gl.texImage3D(target, level, internalformat, width, height, depth, border, format, type, ArrayBufferView srcData, srcOffset);
 
       texImage3D(ctx, funcName, args) {
+        if (sharedState.isContextLost) {
+          return;
+        }
         let [target, level, internalFormat, width, height, depth, border, format, type] = args;
         const info = getTextureInfo(target);
         updateMipLevel(info, target, level, internalFormat, width, height, depth, type);
       },
 
       texParameteri(ctx, funcName, args) {
+        if (sharedState.isContextLost) {
+          return;
+        }
         let [target, pname, value] = args;
         const info = getTextureInfo(target);
         info.parameters = info.parameters || new Map();
@@ -892,6 +1010,9 @@
 
     const extraWrappers = {
       getExtension(ctx, propertyName) {
+        if (sharedState.isContextLost) {
+          return null;
+        }
         const origFn = ctx[propertyName];
         ctx[propertyName] = function(...args) {
           const extensionName = args[0].toLowerCase();
