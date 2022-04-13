@@ -737,9 +737,7 @@
           throw new Error(`no buffer bound to ${target}`);
         }
         let newSize = 0;
-        if (length !== undefined) {
-          newSize = length;
-        } else if (isBufferSource(src)) {
+        if (isBufferSource(src)) {
           newSize = src.byteLength;
         } else if (isNumber(src)) {
           newSize = src;
