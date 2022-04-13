@@ -46,13 +46,15 @@ describe('buffer tests', () => {
 
     gl.bindBuffer(gl.ARRAY_BUFFER, buf1);
     const data1 = new Float32Array(25);
-    const size1 = 15;
-    gl.bufferData(gl.ARRAY_BUFFER, data1, gl.STATIC_DRAW, 0, size1);
+    const size1 = data1.length * data1.BYTES_PER_ELEMENT;
+    const length1 = data1.length;
+    gl.bufferData(gl.ARRAY_BUFFER, data1, gl.STATIC_DRAW, 0, length1);
     tracker.addMemory(size1);
 
     const data1a = new Uint16Array(37);
-    const size1a = 30;
-    gl.bufferData(gl.ARRAY_BUFFER, data1a, gl.STATIC_DRAW, 0, size1a);
+    const size1a = data1a.length * data1a.BYTES_PER_ELEMENT;
+    const length1a = data1a.length;
+    gl.bufferData(gl.ARRAY_BUFFER, data1a, gl.STATIC_DRAW, 0, length1a);
     tracker.addMemory(size1a - size1);
 
     const buf2 = gl.createBuffer();
@@ -60,8 +62,9 @@ describe('buffer tests', () => {
 
     gl.bindBuffer(gl.ARRAY_BUFFER, buf2);
     const data2 = new Float32Array(55);
-    const size2 = 41;
-    gl.bufferData(gl.ARRAY_BUFFER, data2, gl.STATIC_DRAW, 0, size2);
+    const size2 = data2.length * data2.BYTES_PER_ELEMENT;
+    const length2 = data2.length;
+    gl.bufferData(gl.ARRAY_BUFFER, data2, gl.STATIC_DRAW, 0, length2);
     tracker.addMemory(size2);
 
     gl.deleteBuffer(buf1);
