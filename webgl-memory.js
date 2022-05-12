@@ -1,4 +1,4 @@
-/* webgl-memory@1.0.11, license MIT */
+/* webgl-memory@1.0.12, license MIT */
 (function (factory) {
   typeof define === 'function' && define.amd ? define(factory) :
   factory();
@@ -235,6 +235,16 @@
   const COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT  = 0x8C4D;
   const COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT  = 0x8C4E;
   const COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT  = 0x8C4F;
+  // EXT_texture_compression_bptc
+  const COMPRESSED_RGBA_BPTC_UNORM_EXT = 0x8E8C;
+  const COMPRESSED_SRGB_ALPHA_BPTC_UNORM_EXT = 0x8E8D;
+  const COMPRESSED_RGB_BPTC_SIGNED_FLOAT_EXT = 0x8E8E;
+  const COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT_EXT = 0x8E8F;
+  // EXT_texture_compression_rgtc
+  const COMPRESSED_RED_RGTC1_EXT = 0x8DBB;
+  const COMPRESSED_SIGNED_RED_RGTC1_EXT = 0x8DBC;
+  const COMPRESSED_RED_GREEN_RGTC2_EXT = 0x8DBD;
+  const COMPRESSED_SIGNED_RED_GREEN_RGTC2_EXT = 0x8DBE;
 
   const compressedTextureFunctions = new Map([
     [ COMPRESSED_RGB_S3TC_DXT1_EXT, makeComputeBlockRectSizeFunction(4, 4, 8) ],
@@ -294,6 +304,16 @@
     [ COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT, makeComputeBlockRectSizeFunction(4, 4, 8) ],
     [ COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT, makeComputeBlockRectSizeFunction(4, 4, 16) ],
     [ COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT, makeComputeBlockRectSizeFunction(4, 4, 16) ],
+
+    [ COMPRESSED_RGBA_BPTC_UNORM_EXT, makeComputeBlockRectSizeFunction( 4, 4, 16 ) ],
+    [ COMPRESSED_SRGB_ALPHA_BPTC_UNORM_EXT, makeComputeBlockRectSizeFunction( 4, 4, 16 ) ],
+    [ COMPRESSED_RGB_BPTC_SIGNED_FLOAT_EXT, makeComputeBlockRectSizeFunction( 4, 4, 16 ) ],
+    [ COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT_EXT, makeComputeBlockRectSizeFunction( 4, 4, 16 ) ],
+
+    [ COMPRESSED_RED_RGTC1_EXT, makeComputeBlockRectSizeFunction( 4, 4, 8 ) ],
+    [ COMPRESSED_SIGNED_RED_RGTC1_EXT, makeComputeBlockRectSizeFunction( 4, 4, 8 ) ],
+    [ COMPRESSED_RED_GREEN_RGTC2_EXT, makeComputeBlockRectSizeFunction( 4, 4, 16 ) ],
+    [ COMPRESSED_SIGNED_RED_GREEN_RGTC2_EXT, makeComputeBlockRectSizeFunction( 4, 4, 16 ) ],
   ]);
 
   /**
