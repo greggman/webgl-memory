@@ -1,4 +1,4 @@
-/* webgl-memory@1.0.12, license MIT */
+/* webgl-memory@1.0.13, license MIT */
 (function (factory) {
   typeof define === 'function' && define.amd ? define(factory) :
   factory();
@@ -78,6 +78,8 @@
   const HALF_FLOAT                   = 0x140B;
   const HALF_FLOAT_OES               = 0x8D61;  // Thanks Khronos for making this different >:(
 
+  const SRGB_ALPHA_EXT               = 0x8C42;
+
   /**
    * @typedef {Object} TextureFormatDetails
    * @property {number} textureFormat format to pass texImage2D and similar functions.
@@ -99,6 +101,7 @@
       t[LUMINANCE_ALPHA]    = { bytesPerElement: [2, 4, 4, 8],        type: [UNSIGNED_BYTE, HALF_FLOAT, HALF_FLOAT_OES, FLOAT], };
       t[RGB]                = { bytesPerElement: [3, 6, 6, 12, 2],    type: [UNSIGNED_BYTE, HALF_FLOAT, HALF_FLOAT_OES, FLOAT, UNSIGNED_SHORT_5_6_5], };
       t[RGBA]               = { bytesPerElement: [4, 8, 8, 16, 2, 2], type: [UNSIGNED_BYTE, HALF_FLOAT, HALF_FLOAT_OES, FLOAT, UNSIGNED_SHORT_4_4_4_4, UNSIGNED_SHORT_5_5_5_1], };
+      t[SRGB_ALPHA_EXT]     = { bytesPerElement: [4, 8, 8, 16, 2, 2], type: [UNSIGNED_BYTE, HALF_FLOAT, HALF_FLOAT_OES, FLOAT, UNSIGNED_SHORT_4_4_4_4, UNSIGNED_SHORT_5_5_5_1], };
       t[DEPTH_COMPONENT]    = { bytesPerElement: [2, 4],              type: [UNSIGNED_INT, UNSIGNED_SHORT], };
       t[DEPTH_STENCIL]      = { bytesPerElement: [4],                 };
 
