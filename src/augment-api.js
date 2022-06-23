@@ -60,13 +60,10 @@ import {
 ** MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 */
 
-
 const augmentedSet = new Set();
+const webglMemoryIdSymbol = Symbol('webgl-memory-object-id');
 
 /**
- * Given a WebGL context replaces all the functions with wrapped functions
- * that call gl.getError after every command
- *
  * @param {WebGLRenderingContext|Extension} ctx The webgl context to wrap.
  * @param {string} nameOfClass (eg, webgl, webgl2, OES_texture_float)
  */
@@ -89,6 +86,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
         gman_webgl_memory: {
           ctx: {
             getMemoryInfo() {
+              checkGC(ctx);
               const drawingbuffer = computeDrawingbufferSize(ctx, drawingBufferInfo);
               return {
                 memory: {
@@ -112,7 +110,9 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
       },
       bindings: new Map(),
       defaultVertexArray: {},
-      webglObjectToMemory: new Map(),
+      webglObjectIdToMemory: new Map(),
+      allObjects: [],  // [{ref, id}]
+      nextId: 0,
     };
 
     const unRestorableAPIs = new Set([
@@ -123,9 +123,11 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
 
     function resetSharedState() {
       sharedState.bindings.clear();
-      sharedState.webglObjectToMemory.clear();
-      sharedState.webglObjectToMemory.set(sharedState.defaultVertexArray, {});
+      sharedState.webglObjectIdToMemory.clear();
+      sharedState.defaultVertexArray[webglMemoryIdSymbol] = sharedState.nextId++;
+      sharedState.webglObjectIdToMemory.set(sharedState.defaultVertexArray[webglMemoryIdSymbol], {});
       sharedState.currentVertexArray = sharedState.defaultVertexArray;
+
       [sharedState.resources, sharedState.memory].forEach(function(obj) {
         for (let prop in obj) {
           obj[prop] = 0;
@@ -187,12 +189,35 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
     config,
     memory,
     resources,
-    webglObjectToMemory,
+    webglObjectIdToMemory,
+    allObjects,
   } = sharedState;
 
   const origFuncs = {};
 
   function noop() {
+  }
+
+  function checkGC() {
+    for (let i = allObjects.length - 1; i >= 0; --i) {
+      const {ref, id, typeName} = allObjects[i];
+      if (!ref.deref()) {
+        allObjects.splice(i, 1);
+        freeObjectById(id, typeName);
+      }
+    }
+  }
+
+  function freeObjectById(id, typeName) {
+    const info = webglObjectIdToMemory.get(id);
+    if (info) {
+      --resources[typeName];
+      if (typeof memory[typeName] === 'number') {
+        memory[typeName] -= info.size;
+      }
+      webglObjectIdToMemory.delete(id);
+    }
+    return info;
   }
 
   function makeCreateWrapper(ctx, typeName, _funcName) {
@@ -206,13 +231,20 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
         return null;
       }
       ++resources[typeName];
-      webglObjectToMemory.set(webglObj, {
+      const id = sharedState.nextId++;
+      webglObj[webglMemoryIdSymbol] = id;
+      webglObjectIdToMemory.set(id, {
         size: 0,
+      });
+      allObjects.push({
+        ref: new WeakRef(webglObj),
+        id,
+        typeName,
       });
     };
   }
 
-  function makeDeleteWrapper(typeName, fn = noop, _funcName) {
+  function makeDeleteWrapper(typeName, _funcName) {
     const funcName = _funcName || `delete${typeName[0].toUpperCase()}${typeName.substr(1)}`;
     if (!ctx[funcName]) {
       return;
@@ -222,13 +254,8 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
         return;
       }
       const [obj] = args;
-      const info = webglObjectToMemory.get(obj);
-      if (info) {
-        --resources[typeName];
-        fn(obj, info);
-        // TODO: handle resource counts
-        webglObjectToMemory.delete(obj);
-      }
+      const id = obj[webglMemoryIdSymbol];
+      freeObjectById(id, typeName);
     };
   }
 
@@ -240,7 +267,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
     if (!obj) {
       throw new Error(`no renderbuffer bound to ${target}`);
     }
-    const info = webglObjectToMemory.get(obj);
+    const info = webglObjectIdToMemory.get(obj[webglMemoryIdSymbol]);
     if (!info) {
       throw new Error(`unknown renderbuffer ${obj}`);
     }
@@ -287,7 +314,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
     if (!obj) {
       throw new Error(`no texture bound to ${target}`);
     }
-    const info = webglObjectToMemory.get(obj);
+    const info = webglObjectIdToMemory.get(obj[webglMemoryIdSymbol]);
     if (!info) {
       throw new Error(`unknown texture ${obj}`);
     }
@@ -349,7 +376,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
     }
     switch (target) {
       case ELEMENT_ARRAY_BUFFER:
-        const info = webglObjectToMemory.get(sharedState.currentVertexArray);
+        const info = webglObjectIdToMemory.get(sharedState.currentVertexArray[webglMemoryIdSymbol]);
         info.elementArrayBuffer = obj;
         break;
       default:
@@ -375,7 +402,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
       switch (target) {
         case ELEMENT_ARRAY_BUFFER:
           {
-            const info = webglObjectToMemory.get(sharedState.currentVertexArray);
+            const info = webglObjectIdToMemory.get(sharedState.currentVertexArray[webglMemoryIdSymbol]);
             obj = info.elementArrayBuffer;
           }
           break;
@@ -397,7 +424,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
         throw new Error(`unsupported bufferData src type ${src}`);
       }
 
-      const info = webglObjectToMemory.get(obj);
+      const info = webglObjectIdToMemory.get(obj[webglMemoryIdSymbol]);
       if (!info) {
         throw new Error(`unknown buffer ${obj}`);
       }
@@ -493,24 +520,18 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
       updateMipLevel(info, target, level, internalFormat, width, height, depth, UNSIGNED_BYTE);
     },
 
-    deleteBuffer: makeDeleteWrapper('buffer', function(obj, info) {
-      memory.buffer -= info.size;
-    }),
+    deleteBuffer: makeDeleteWrapper('buffer'),
     deleteFramebuffer: makeDeleteWrapper('framebuffer'),
     deleteProgram: makeDeleteWrapper('program'),
     deleteQuery: makeDeleteWrapper('query'),
-    deleteRenderbuffer: makeDeleteWrapper('renderbuffer', function(obj, info) {
-      memory.renderbuffer -= info.size;
-    }),
+    deleteRenderbuffer: makeDeleteWrapper('renderbuffer'),
     deleteSampler: makeDeleteWrapper('sampler'),
     deleteShader: makeDeleteWrapper('shader'),
     deleteSync: makeDeleteWrapper('sync'),
-    deleteTexture: makeDeleteWrapper('texture', function(obj, info) {
-      memory.texture -= info.size;
-    }),
+    deleteTexture: makeDeleteWrapper('texture'),
     deleteTransformFeedback: makeDeleteWrapper('transformFeedback'),
     deleteVertexArray: makeDeleteWrapper('vertexArray'),
-    deleteVertexArrayOES: makeDeleteWrapper('vertexArray', noop, 'deleteVertexArrayOES'),
+    deleteVertexArrayOES: makeDeleteWrapper('vertexArray', 'deleteVertexArrayOES'),
 
     fenceSync: function(ctx) {
       if (sharedState.isContextLost) {
@@ -523,7 +544,9 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
       return function(ctx, funcName, args, webglObj) {
         ++resources.sync;
 
-        webglObjectToMemory.set(webglObj, {
+        const id = sharedState.nextId++;
+        webglObj[webglMemoryIdSymbol] = id;
+        webglObjectIdToMemory.set(id, {
           size: 0,
         });
       };
@@ -680,7 +703,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
     },
   };
 
-  // Makes a function that calls a WebGL function and then calls getError.
+  // Makes a function that calls a WebGL function.
   function makeErrorWrapper(ctx, funcName) {
     const origFn = ctx[funcName];
     const preCheck = preChecks[funcName] || noop;

@@ -4,6 +4,7 @@
 
 import './tests/buffer-tests.js';
 import './tests/contextloss-tests.js';
+import './tests/garbage-collection-tests.js';
 import './tests/info-tests.js';
 import './tests/program-tests.js';
 import './tests/renderbuffer-tests.js';
