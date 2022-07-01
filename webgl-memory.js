@@ -1,4 +1,4 @@
-/* webgl-memory@1.0.13, license MIT */
+/* webgl-memory@1.0.14, license MIT */
 (function (factory) {
   typeof define === 'function' && define.amd ? define(factory) :
   factory();
@@ -368,9 +368,11 @@
   }
   function computeDrawingbufferSize(gl, drawingBufferInfo) {
     // this will need to change for hi-color support
+    if (gl.isContextLost()) {
+      return 0;
+    }
     const {samples, depthBits, contextAttributes} = drawingBufferInfo;
-    const {width, height} = gl.canvas;
-    const size = width * height * 4;
+    const size = gl.drawingBufferWidth * gl.drawingBufferHeight * 4 || 0;
     const depth = contextAttributes.depth ? 1 : 0;
     const stencil = contextAttributes.stencil ? 1 : 0;
     const depthSize = Math.min(stencil + depthBits > 16 ? 4 : 2, 4);
