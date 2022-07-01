@@ -14,7 +14,7 @@ function createExposedPromise() {
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-describe('webgl context loss tests', () => {
+describe('webgl context lost tests', () => {
 
   async function testContextLost(gl) {
     const contextLostExposedPromise = createExposedPromise();
