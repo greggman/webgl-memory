@@ -1,4 +1,4 @@
-/* webgl-memory@1.0.14, license MIT */
+/* webgl-memory@1.0.15, license MIT */
 (function (factory) {
   typeof define === 'function' && define.amd ? define(factory) :
   factory();
@@ -361,22 +361,29 @@
 
   function getDrawingbufferInfo(gl) {
     return {
-      samples: gl.getParameter(gl.SAMPLES),
+      samples: gl.getParameter(gl.SAMPLES) || 1,
       depthBits: gl.getParameter(gl.DEPTH_BITS),
+      stencilBits: gl.getParameter(gl.STENCIL_BITS),
       contextAttributes: gl.getContextAttributes(),
     };
   }
+
+  function computeDepthStencilSize(drawingBufferInfo) {
+    const {depthBits, stencilBits} = drawingBufferInfo;
+    const depthSize = (depthBits + stencilBits + 7) / 8 | 0;
+    return depthSize === 3 ? 4 : depthSize;
+  }
+
   function computeDrawingbufferSize(gl, drawingBufferInfo) {
-    // this will need to change for hi-color support
     if (gl.isContextLost()) {
       return 0;
     }
-    const {samples, depthBits, contextAttributes} = drawingBufferInfo;
-    const size = gl.drawingBufferWidth * gl.drawingBufferHeight * 4 || 0;
-    const depth = contextAttributes.depth ? 1 : 0;
-    const stencil = contextAttributes.stencil ? 1 : 0;
-    const depthSize = Math.min(stencil + depthBits > 16 ? 4 : 2, 4);
-    return size + size * samples + size * depth * depthSize;
+    const {samples} = drawingBufferInfo;
+    // this will need to change for hi-color support
+    const colorSize = 4;
+    const size = gl.drawingBufferWidth * gl.drawingBufferHeight;
+    const depthStencilSize = computeDepthStencilSize(drawingBufferInfo);
+    return size * colorSize + size * samples * colorSize + size * depthStencilSize;
   }
 
   // I know this is not a full check
