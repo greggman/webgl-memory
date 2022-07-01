@@ -105,8 +105,7 @@ export function getDrawingbufferInfo(gl) {
 export function computeDrawingbufferSize(gl, drawingBufferInfo) {
   // this will need to change for hi-color support
   const {samples, depthBits, contextAttributes} = drawingBufferInfo;
-  const {width, height} = gl.canvas;
-  const size = width * height * 4;
+  const size = gl.drawingBufferWidth * gl.drawingBufferHeight * 4 || 0;
   const depth = contextAttributes.depth ? 1 : 0;
   const stencil = contextAttributes.stencil ? 1 : 0;
   const depthSize = Math.min(stencil + depthBits > 16 ? 4 : 2, 4);
