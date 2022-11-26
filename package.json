@@ -6,9 +6,11 @@
   "module": "webgl-memory.js",
   "scripts": {
     "build": "rollup -c",
+    "check-ci": "npm run eslint && npm run build && npm run test",
     "eslint": "eslint \"**/*.js\"",
-    "pre-push": "npm run eslint",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "pre-push": "npm run eslint && npm run test",
+    "test": "npm run test-browser",
+    "test-browser": "node test/puppeteer.js"
   },
   "repository": {
     "type": "git",
@@ -31,6 +33,8 @@
     "eslint-plugin-html": "^6.0.2",
     "eslint-plugin-optional-comma-spacing": "0.0.4",
     "eslint-plugin-require-trailing-comma": "0.0.1",
+    "express": "^4.18.2",
+    "puppeteer": "^19.3.0",
     "rollup": "^2.23.0",
     "rollup-plugin-node-resolve": "^5.2.0"
   }
