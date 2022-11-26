@@ -65,11 +65,11 @@ const DEPTH32F_STENCIL8            = 0x8CAD;
 const DEPTH24_STENCIL8             = 0x88F0;
 
 /* DataType */
-const BYTE                         = 0x1400;
+// const BYTE                         = 0x1400;
 const UNSIGNED_BYTE                = 0x1401;
-const SHORT                        = 0x1402;
+// const SHORT                        = 0x1402;
 const UNSIGNED_SHORT               = 0x1403;
-const INT                          = 0x1404;
+// const INT                          = 0x1404;
 const UNSIGNED_INT                 = 0x1405;
 const FLOAT                        = 0x1406;
 const UNSIGNED_SHORT_4_4_4_4       = 0x8033;
@@ -77,11 +77,11 @@ const UNSIGNED_SHORT_5_5_5_1       = 0x8034;
 const UNSIGNED_SHORT_5_6_5         = 0x8363;
 const HALF_FLOAT                   = 0x140B;
 const HALF_FLOAT_OES               = 0x8D61;  // Thanks Khronos for making this different >:(
-const UNSIGNED_INT_2_10_10_10_REV  = 0x8368;
-const UNSIGNED_INT_10F_11F_11F_REV = 0x8C3B;
-const UNSIGNED_INT_5_9_9_9_REV     = 0x8C3E;
-const FLOAT_32_UNSIGNED_INT_24_8_REV = 0x8DAD;
-const UNSIGNED_INT_24_8            = 0x84FA;
+// const UNSIGNED_INT_2_10_10_10_REV  = 0x8368;
+// const UNSIGNED_INT_10F_11F_11F_REV = 0x8C3B;
+// const UNSIGNED_INT_5_9_9_9_REV     = 0x8C3E;
+// const FLOAT_32_UNSIGNED_INT_24_8_REV = 0x8DAD;
+// const UNSIGNED_INT_24_8            = 0x84FA;
 
 const RG                           = 0x8227;
 const RG_INTEGER                   = 0x8228;
@@ -207,14 +207,14 @@ function makeComputeBlockRectSizeFunction(blockWidth, blockHeight, bytesPerBlock
     const blocksAcross = (width + blockWidth - 1) / blockWidth | 0;
     const blocksDown =  (height + blockHeight - 1) / blockHeight | 0;
     return blocksAcross * blocksDown * bytesPerBlock * depth;
-  }
-} 
+  };
+}
 
 function makeComputePaddedRectSizeFunction(minWidth, minHeight, divisor) {
   return function(width, height, depth) {
     return (Math.max(width, minWidth) * Math.max(height, minHeight) / divisor | 0) * depth;
-  }
-} 
+  };
+}
 
 // WEBGL_compressed_texture_s3tc
 const COMPRESSED_RGB_S3TC_DXT1_EXT        = 0x83F0;
@@ -384,4 +384,4 @@ function getBytesForMipUncompressed(internalFormat, width, height, depth, type) 
 export function getBytesForMip(internalFormat, width, height, depth, type) {
   const fn = compressedTextureFunctions.get(internalFormat);
   return fn ? fn(width, height, depth) : getBytesForMipUncompressed(internalFormat, width, height, depth, type);
-};
+}

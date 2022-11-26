@@ -1,5 +1,5 @@
 import { computeDrawingbufferSize, getDrawingbufferInfo } from '../../src/utils.js';
-import assert, {assertEqual, assertNotEqual, assertTruthy} from '../assert.js';
+import {assertEqual, assertNotEqual, assertTruthy} from '../assert.js';
 import {describe, it} from '../mocha-support.js';
 import {createContext, createContext2} from '../webgl.js';
 
@@ -87,7 +87,7 @@ describe('info tests', () => {
       const {memory} = info;
       assertEqual(memory.drawingbuffer, newDrawingbufferSize);
       assertEqual(memory.total, newDrawingbufferSize);
-      assertNotEqual(drawingbufferSize, newDrawingbufferSize)
+      assertNotEqual(drawingbufferSize, newDrawingbufferSize);
     }
 
   });

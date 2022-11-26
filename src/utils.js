@@ -105,7 +105,7 @@ export function getDrawingbufferInfo(gl) {
 }
 
 function computeDepthStencilSize(drawingBufferInfo) {
-  const {depthBits, stencilBits} = drawingBufferInfo
+  const {depthBits, stencilBits} = drawingBufferInfo;
   const depthSize = (depthBits + stencilBits + 7) / 8 | 0;
   return depthSize === 3 ? 4 : depthSize;
 }

@@ -180,7 +180,7 @@ describe('buffer tests', () => {
     tracker.deleteObjectAndMemory(size2);
   });
 
-  it ('test bindBufferBase/bindBufferRange', () => {
+  it('test bindBufferBase/bindBufferRange', () => {
     const {gl} = createContext2();
     if (!gl) {
       return;
@@ -203,7 +203,7 @@ describe('buffer tests', () => {
     tracker.addObjects(1);
 
     const data2 = new Float32Array(55);
-    gl.bindBufferRange(gl.TRANSFORM_FEEDBACK_BUFFER, 0, buf2, 0, data2.byteLength);    
+    gl.bindBufferRange(gl.TRANSFORM_FEEDBACK_BUFFER, 0, buf2, 0, data2.byteLength);
     gl.bufferData(gl.TRANSFORM_FEEDBACK_BUFFER, data2, gl.STATIC_DRAW);
     tracker.addMemory(data2.byteLength);
 

@@ -1,4 +1,4 @@
-import assert, { assertEqual, assertFalsy } from '../assert.js';
+import { assertEqual, assertFalsy } from '../assert.js';
 import {describe, it} from '../mocha-support.js';
 import {createContext} from '../webgl.js';
 import {MemInfoTracker} from './test-utils.js';
@@ -25,7 +25,7 @@ describe('webgl context lost tests', () => {
       e.preventDefault();
       contextLostExposedPromise.resolve();
     };
-    const handleContextRestored = _ => {
+    const handleContextRestored = () => {
       contextRestoredExposedPromise.resolve();
     };
 
@@ -106,12 +106,12 @@ describe('webgl context lost tests', () => {
     assertEqual(memExt.getMemoryInfo().resources.vertexArray, 1);
   }
 
-  it('test context loss', async () => {
+  it('test context loss', async() => {
     const {gl} = createContext();
     await testContextLost(gl);
   });
 
-  it('test context loss OffscreenCanvas', async () => {
+  it('test context loss OffscreenCanvas', async() => {
     if (typeof OffscreenCanvas === 'undefined') {
       return;
     }

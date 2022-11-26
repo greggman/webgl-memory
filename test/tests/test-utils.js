@@ -35,4 +35,4 @@ export class MemInfoTracker {
     this.numObjects -= deltaObjects;
     this.check();
   }
-};
+}

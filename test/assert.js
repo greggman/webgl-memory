@@ -1,5 +1,3 @@
-/* global console */
-
 export const config = {};
 
 export function setConfig(options) {

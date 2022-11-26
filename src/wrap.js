@@ -23,11 +23,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import {augmentAPI} from './augment-api.js';
 
-/* global console */
-/* global document */
-/* global HTMLCanvasElement */
-/* global OffscreenCanvas */
-
 function wrapGetContext(Ctor) {
   const oldFn = Ctor.prototype.getContext;
   Ctor.prototype.getContext = function(type, ...args) {
@@ -37,7 +32,7 @@ function wrapGetContext(Ctor) {
     if (ctx && ctx.bindTexture) {
       const config = {};
       augmentAPI(ctx, type, config);
-      const ext = ctx.getExtension('GMAN_webgl_memory');
+      ctx.getExtension('GMAN_webgl_memory');
     }
     return ctx;
   };

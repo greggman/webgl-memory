@@ -1,6 +1,4 @@
 /* global mocha */
-/* global URLSearchParams */
-/* global window */
 
 import './tests/buffer-tests.js';
 import './tests/contextloss-tests.js';

@@ -1,5 +1,3 @@
-/* global window */
-
 export const describe = window.describe;
 export const it = window.it;
 export const before = window.before;

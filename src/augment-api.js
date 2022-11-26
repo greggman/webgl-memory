@@ -31,10 +31,6 @@ import {
   isNumber,
 } from './utils.js';
 
-/* global console */
-/* global WebGL2RenderingContext */
-/* global WebGLUniformLocation */
-
 //------------ [ from https://github.com/KhronosGroup/WebGLDeveloperTools ]
 
 /*
@@ -70,6 +66,7 @@ const augmentedSet = new Set();
  * @param {WebGLRenderingContext|Extension} ctx The webgl context to wrap.
  * @param {string} nameOfClass (eg, webgl, webgl2, OES_texture_float)
  */
+// eslint-disable-next-line consistent-return
 export function augmentAPI(ctx, nameOfClass, options = {}) {
 
   if (augmentedSet.has(ctx)) {
@@ -95,10 +92,10 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
                   ...memory,
                   drawingbuffer,
                   total: drawingbuffer + memory.buffer + memory.texture + memory.renderbuffer,
-                }, 
+                },
                 resources: {
                   ...resources,
-                }
+                },
               };
             },
           },
@@ -127,7 +124,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
       sharedState.webglObjectToMemory.set(sharedState.defaultVertexArray, {});
       sharedState.currentVertexArray = sharedState.defaultVertexArray;
       [sharedState.resources, sharedState.memory].forEach(function(obj) {
-        for (let prop in obj) {
+        for (const prop in obj) {
           obj[prop] = 0;
         }
       });
@@ -138,7 +135,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
       //   * all resources are lost.
       //     Solution: handled by resetSharedState
       //   * all functions are no-op
-      //     Solutions: 
+      //     Solutions:
       //        * swap all functions for noop
       //          (not so easy because some functions return values)
       //        * wrap all functions is a isContextLost check forwarder
@@ -157,7 +154,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
         if (!unRestorableAPIs.has(name) && origFuncs) {
           augmentedSet.delete(ctx);
           for (const [funcName, origFn] of Object.entries(origFuncs)) {
-            ctx[funcName] = origFn
+            ctx[funcName] = origFn;
           }
           delete apis[name];
         }
@@ -182,9 +179,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
 
   const {
     apis,
-    baseContext,
     bindings,
-    config,
     memory,
     resources,
     webglObjectToMemory,
@@ -198,12 +193,12 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
   function makeCreateWrapper(ctx, typeName, _funcName) {
     const funcName = _funcName || `create${typeName[0].toUpperCase()}${typeName.substr(1)}`;
     if (!ctx[funcName]) {
-      return;
+      return null;
     }
     resources[typeName] = 0;
     return function(ctx, funcName, args, webglObj) {
       if (sharedState.isContextLost) {
-        return null;
+        return;
       }
       ++resources[typeName];
       webglObjectToMemory.set(webglObj, {
@@ -215,7 +210,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
   function makeDeleteWrapper(typeName, fn = noop, _funcName) {
     const funcName = _funcName || `delete${typeName[0].toUpperCase()}${typeName.substr(1)}`;
     if (!ctx[funcName]) {
-      return;
+      return null;
     }
     return function(ctx, funcName, args) {
       if (sharedState.isContextLost) {
@@ -304,7 +299,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
 
     info.mips = info.mips || [];
     info.mips[level] = info.mips[level] || [];
-    const mipFaceInfo = info.mips[level][faceNdx] || {}
+    const mipFaceInfo = info.mips[level][faceNdx] || {};
     info.size -= mipFaceInfo.size || 0;
 
     mipFaceInfo.size = newMipSize;
@@ -324,7 +319,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
   function updateTexStorage(target, levels, internalFormat, width, height, depth) {
     const info = getTextureInfo(target);
     const numFaces = target === TEXTURE_CUBE_MAP ? 6 : 1;
-    const baseFaceTarget = target === TEXTURE_CUBE_MAP ? TEXTURE_CUBE_MAP_POSITIVE_X : target;;
+    const baseFaceTarget = target === TEXTURE_CUBE_MAP ? TEXTURE_CUBE_MAP_POSITIVE_X : target;
     for (let level = 0; level < levels; ++level) {
       for (let face = 0; face < numFaces; ++face) {
         updateMipLevel(info, baseFaceTarget + face, level, internalFormat, width, height, depth);
@@ -348,10 +343,11 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
       return;
     }
     switch (target) {
-      case ELEMENT_ARRAY_BUFFER:
-        const info = webglObjectToMemory.get(sharedState.currentVertexArray);
-        info.elementArrayBuffer = obj;
-        break;
+      case ELEMENT_ARRAY_BUFFER: {
+          const info = webglObjectToMemory.get(sharedState.currentVertexArray);
+          info.elementArrayBuffer = obj;
+          break;
+        }
       default:
         bindings.set(target, obj);
         break;
@@ -370,7 +366,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
       if (sharedState.isContextLost) {
         return;
       }
-      const [target, src, /* usage */, srcOffset = 0, length = undefined] = args;
+      const [target, src, /* usage */, /*srcOffset = 0*/, length = undefined] = args;
       let obj;
       switch (target) {
         case ELEMENT_ARRAY_BUFFER:
@@ -416,12 +412,12 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
     },
 
     bindBufferBase(gl, funcName, args) {
-      const [target, ndx, obj] = args;
+      const [target, /*ndx*/, obj] = args;
       handleBufferBinding(target, obj);
     },
 
     bindBufferRange(gl, funcName, args) {
-      const [target, ndx, obj, offset, size] = args;
+      const [target, /*ndx*/, obj, /*offset*/, /*size*/] = args;
       handleBufferBinding(target, obj);
     },
 
@@ -446,7 +442,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
       if (sharedState.isContextLost) {
         return;
       }
-      const [target, level, internalFormat, x, y, width, height, border] = args;
+      const [target, level, internalFormat, /*x*/, /*y*/, width, height, /*border*/] = args;
       const info = getTextureInfo(target);
       updateMipLevel(info, target, level, internalFormat, width, height, 1, UNSIGNED_BYTE);
     },
@@ -514,10 +510,10 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
 
     fenceSync: function(ctx) {
       if (sharedState.isContextLost) {
-        return;
+        return undefined;
       }
       if (!ctx.fenceSync) {
-        return;
+        return undefined;
       }
       resources.sync = 0;
       return function(ctx, funcName, args, webglObj) {
@@ -537,11 +533,13 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
       const info = getTextureInfo(target);
       const baseMipNdx = info.parameters ? info.parameters.get(TEXTURE_BASE_LEVEL) || 0 : 0;
       const maxMipNdx = info.parameters ? info.parameters.get(TEXTURE_MAX_LEVEL) || 1024 : 1024;
-      let {width, height, depth, internalFormat, type} = info.mips[baseMipNdx][0];
+      const mipInfo = info.mips[baseMipNdx][0];
+      let {width, height, depth} = mipInfo;
+      const {internalFormat, type} = mipInfo;
       let level = baseMipNdx + 1;
 
       const numFaces = target === TEXTURE_CUBE_MAP ? 6 : 1;
-      const baseFaceTarget = target === TEXTURE_CUBE_MAP ? TEXTURE_CUBE_MAP_POSITIVE_X : target;;
+      const baseFaceTarget = target === TEXTURE_CUBE_MAP ? TEXTURE_CUBE_MAP_POSITIVE_X : target;
       while (level <= maxMipNdx && !(width === 1 && height === 1 && (depth === 1 || target === TEXTURE_2D_ARRAY))) {
         width = Math.ceil(Math.max(width / 2, 1));
         height = Math.ceil(Math.max(height / 2, 1));
@@ -598,11 +596,11 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
       // void gl.texImage2D(target, level, internalformat, width, height, border, format, type, ImageBitmap source);
       // void gl.texImage2D(target, level, internalformat, width, height, border, format, type, ImageData source);
       // void gl.texImage2D(target, level, internalformat, width, height, border, format, type, ArrayBufferView srcData, srcOffset);
-      let [target, level, internalFormat] = args;
+      const [target, level, internalFormat] = args;
       let width;
       let height;
       let type;
-      if (args.length == 6) {
+      if (args.length === 6) {
         const src = args[5];
         width = src.width;
         height = src.height;
@@ -631,7 +629,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
       if (sharedState.isContextLost) {
         return;
       }
-      let [target, level, internalFormat, width, height, depth, border, format, type] = args;
+      const [target, level, internalFormat, width, height, depth, /*border*/, /*format*/, type] = args;
       const info = getTextureInfo(target);
       updateMipLevel(info, target, level, internalFormat, width, height, depth, type);
     },
@@ -640,7 +638,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
       if (sharedState.isContextLost) {
         return;
       }
-      let [target, pname, value] = args;
+      const [target, pname, value] = args;
       const info = getTextureInfo(target);
       info.parameters = info.parameters || new Map();
       info.parameters.set(pname, value);
@@ -648,13 +646,13 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
 
     // void gl.texStorage2D(target, levels, internalformat, width, height);
     texStorage2D(ctx, funcName, args) {
-      let [target, levels, internalFormat, width, height] = args;
+      const [target, levels, internalFormat, width, height] = args;
       updateTexStorage(target, levels, internalFormat, width, height, 1);
     },
 
     // void gl.texStorage3D(target, levels, internalformat, width, height, depth);
     texStorage3D(ctx, funcName, args) {
-      let [target, levels, internalFormat, width, height, depth] = args;
+      const [target, levels, internalFormat, width, height, depth] = args;
       updateTexStorage(target, levels, internalFormat, width, height, depth);
     },
   };
@@ -662,7 +660,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
   const extraWrappers = {
     getExtension(ctx, propertyName) {
       if (sharedState.isContextLost) {
-        return null;
+        return;
       }
       const origFn = ctx[propertyName];
       ctx[propertyName] = function(...args) {

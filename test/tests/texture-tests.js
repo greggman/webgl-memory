@@ -1,4 +1,3 @@
-import {assertThrowsWith} from '../assert.js';
 import {describe, it} from '../mocha-support.js';
 import {createContext, createContext2} from '../webgl.js';
 import {MemInfoTracker} from './test-utils.js';
@@ -259,7 +258,7 @@ describe('tex-image tests', () => {
     const texSize = 4 * (
       16 * 8 +    // level1
        8 * 4 +    // level2
-       4 * 2)     // level3
+       4 * 2);    // level3
     tracker.addMemory(texSize - mip1Size);
 
     gl.deleteTexture(tex1);
