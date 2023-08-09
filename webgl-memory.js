@@ -2,7 +2,7 @@
 (function (factory) {
   typeof define === 'function' && define.amd ? define(factory) :
   factory();
-}((function () { 'use strict';
+})((function () { 'use strict';
 
   /* PixelFormat */
   const ALPHA                          = 0x1906;
@@ -68,8 +68,13 @@
   const DEPTH_COMPONENT32F           = 0x8CAC;
   const DEPTH32F_STENCIL8            = 0x8CAD;
   const DEPTH24_STENCIL8             = 0x88F0;
+
+  /* DataType */
+  // const BYTE                         = 0x1400;
   const UNSIGNED_BYTE                = 0x1401;
+  // const SHORT                        = 0x1402;
   const UNSIGNED_SHORT               = 0x1403;
+  // const INT                          = 0x1404;
   const UNSIGNED_INT                 = 0x1405;
   const FLOAT                        = 0x1406;
   const UNSIGNED_SHORT_4_4_4_4       = 0x8033;
@@ -172,14 +177,14 @@
       const blocksAcross = (width + blockWidth - 1) / blockWidth | 0;
       const blocksDown =  (height + blockHeight - 1) / blockHeight | 0;
       return blocksAcross * blocksDown * bytesPerBlock * depth;
-    }
-  } 
+    };
+  }
 
   function makeComputePaddedRectSizeFunction(minWidth, minHeight, divisor) {
     return function(width, height, depth) {
       return (Math.max(width, minWidth) * Math.max(height, minHeight) / divisor | 0) * depth;
-    }
-  } 
+    };
+  }
 
   // WEBGL_compressed_texture_s3tc
   const COMPRESSED_RGB_S3TC_DXT1_EXT        = 0x83F0;
@@ -414,10 +419,6 @@
   CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   */
 
-  /* global console */
-  /* global WebGL2RenderingContext */
-  /* global WebGLUniformLocation */
-
   //------------ [ from https://github.com/KhronosGroup/WebGLDeveloperTools ]
 
   /*
@@ -453,6 +454,7 @@
    * @param {WebGLRenderingContext|Extension} ctx The webgl context to wrap.
    * @param {string} nameOfClass (eg, webgl, webgl2, OES_texture_float)
    */
+  // eslint-disable-next-line consistent-return
   function augmentAPI(ctx, nameOfClass, options = {}) {
 
     if (augmentedSet.has(ctx)) {
@@ -478,10 +480,10 @@
                     ...memory,
                     drawingbuffer,
                     total: drawingbuffer + memory.buffer + memory.texture + memory.renderbuffer,
-                  }, 
+                  },
                   resources: {
                     ...resources,
-                  }
+                  },
                 };
               },
             },
@@ -510,7 +512,7 @@
         sharedState.webglObjectToMemory.set(sharedState.defaultVertexArray, {});
         sharedState.currentVertexArray = sharedState.defaultVertexArray;
         [sharedState.resources, sharedState.memory].forEach(function(obj) {
-          for (let prop in obj) {
+          for (const prop in obj) {
             obj[prop] = 0;
           }
         });
@@ -521,7 +523,7 @@
         //   * all resources are lost.
         //     Solution: handled by resetSharedState
         //   * all functions are no-op
-        //     Solutions: 
+        //     Solutions:
         //        * swap all functions for noop
         //          (not so easy because some functions return values)
         //        * wrap all functions is a isContextLost check forwarder
@@ -565,9 +567,7 @@
 
     const {
       apis,
-      baseContext,
       bindings,
-      config,
       memory,
       resources,
       webglObjectToMemory,
@@ -581,12 +581,12 @@
     function makeCreateWrapper(ctx, typeName, _funcName) {
       const funcName = _funcName || `create${typeName[0].toUpperCase()}${typeName.substr(1)}`;
       if (!ctx[funcName]) {
-        return;
+        return null;
       }
       resources[typeName] = 0;
       return function(ctx, funcName, args, webglObj) {
         if (sharedState.isContextLost) {
-          return null;
+          return;
         }
         ++resources[typeName];
         webglObjectToMemory.set(webglObj, {
@@ -598,7 +598,7 @@
     function makeDeleteWrapper(typeName, fn = noop, _funcName) {
       const funcName = _funcName || `delete${typeName[0].toUpperCase()}${typeName.substr(1)}`;
       if (!ctx[funcName]) {
-        return;
+        return null;
       }
       return function(ctx, funcName, args) {
         if (sharedState.isContextLost) {
@@ -668,16 +668,20 @@
       target = isCubemapFace(target) ? TEXTURE_CUBE_MAP : target;
       const obj = bindings.get(target);
       if (!obj) {
-        throw new Error(`no texture bound to ${target}`);
+        return;
       }
       const info = webglObjectToMemory.get(obj);
       if (!info) {
-        throw new Error(`unknown texture ${obj}`);
+        return;
       }
       return info;
     }
 
     function updateMipLevel(info, target, level, internalFormat, width, height, depth, type) {
+      if (!info) {
+        return;
+      }
+
       const oldSize = info.size;
       const newMipSize = getBytesForMip(internalFormat, width, height, depth, type);
 
@@ -707,7 +711,8 @@
     function updateTexStorage(target, levels, internalFormat, width, height, depth) {
       const info = getTextureInfo(target);
       const numFaces = target === TEXTURE_CUBE_MAP ? 6 : 1;
-      const baseFaceTarget = target === TEXTURE_CUBE_MAP ? TEXTURE_CUBE_MAP_POSITIVE_X : target;    for (let level = 0; level < levels; ++level) {
+      const baseFaceTarget = target === TEXTURE_CUBE_MAP ? TEXTURE_CUBE_MAP_POSITIVE_X : target;
+      for (let level = 0; level < levels; ++level) {
         for (let face = 0; face < numFaces; ++face) {
           updateMipLevel(info, baseFaceTarget + face, level, internalFormat, width, height, depth);
         }
@@ -730,10 +735,11 @@
         return;
       }
       switch (target) {
-        case ELEMENT_ARRAY_BUFFER:
-          const info = webglObjectToMemory.get(sharedState.currentVertexArray);
-          info.elementArrayBuffer = obj;
-          break;
+        case ELEMENT_ARRAY_BUFFER: {
+            const info = webglObjectToMemory.get(sharedState.currentVertexArray);
+            info.elementArrayBuffer = obj;
+            break;
+          }
         default:
           bindings.set(target, obj);
           break;
@@ -752,7 +758,7 @@
         if (sharedState.isContextLost) {
           return;
         }
-        const [target, src, /* usage */, srcOffset = 0, length = undefined] = args;
+        const [target, src, /* usage */, /*srcOffset = 0*/, length = undefined] = args;
         let obj;
         switch (target) {
           case ELEMENT_ARRAY_BUFFER:
@@ -798,12 +804,12 @@
       },
 
       bindBufferBase(gl, funcName, args) {
-        const [target, ndx, obj] = args;
+        const [target, /*ndx*/, obj] = args;
         handleBufferBinding(target, obj);
       },
 
       bindBufferRange(gl, funcName, args) {
-        const [target, ndx, obj, offset, size] = args;
+        const [target, /*ndx*/, obj, /*offset*/, /*size*/] = args;
         handleBufferBinding(target, obj);
       },
 
@@ -828,7 +834,7 @@
         if (sharedState.isContextLost) {
           return;
         }
-        const [target, level, internalFormat, x, y, width, height, border] = args;
+        const [target, level, internalFormat, /*x*/, /*y*/, width, height, /*border*/] = args;
         const info = getTextureInfo(target);
         updateMipLevel(info, target, level, internalFormat, width, height, 1, UNSIGNED_BYTE);
       },
@@ -896,10 +902,10 @@
 
       fenceSync: function(ctx) {
         if (sharedState.isContextLost) {
-          return;
+          return undefined;
         }
         if (!ctx.fenceSync) {
-          return;
+          return undefined;
         }
         resources.sync = 0;
         return function(ctx, funcName, args, webglObj) {
@@ -919,11 +925,14 @@
         const info = getTextureInfo(target);
         const baseMipNdx = info.parameters ? info.parameters.get(TEXTURE_BASE_LEVEL) || 0 : 0;
         const maxMipNdx = info.parameters ? info.parameters.get(TEXTURE_MAX_LEVEL) || 1024 : 1024;
-        let {width, height, depth, internalFormat, type} = info.mips[baseMipNdx][0];
+        const mipInfo = info.mips[baseMipNdx][0];
+        let {width, height, depth} = mipInfo;
+        const {internalFormat, type} = mipInfo;
         let level = baseMipNdx + 1;
 
         const numFaces = target === TEXTURE_CUBE_MAP ? 6 : 1;
-        const baseFaceTarget = target === TEXTURE_CUBE_MAP ? TEXTURE_CUBE_MAP_POSITIVE_X : target;      while (level <= maxMipNdx && !(width === 1 && height === 1 && (depth === 1 || target === TEXTURE_2D_ARRAY))) {
+        const baseFaceTarget = target === TEXTURE_CUBE_MAP ? TEXTURE_CUBE_MAP_POSITIVE_X : target;
+        while (level <= maxMipNdx && !(width === 1 && height === 1 && (depth === 1 || target === TEXTURE_2D_ARRAY))) {
           width = Math.ceil(Math.max(width / 2, 1));
           height = Math.ceil(Math.max(height / 2, 1));
           depth = target === TEXTURE_2D_ARRAY ? depth : Math.ceil(Math.max(depth / 2, 1));
@@ -979,11 +988,11 @@
         // void gl.texImage2D(target, level, internalformat, width, height, border, format, type, ImageBitmap source);
         // void gl.texImage2D(target, level, internalformat, width, height, border, format, type, ImageData source);
         // void gl.texImage2D(target, level, internalformat, width, height, border, format, type, ArrayBufferView srcData, srcOffset);
-        let [target, level, internalFormat] = args;
+        const [target, level, internalFormat] = args;
         let width;
         let height;
         let type;
-        if (args.length == 6) {
+        if (args.length === 6) {
           const src = args[5];
           width = src.width;
           height = src.height;
@@ -1012,7 +1021,7 @@
         if (sharedState.isContextLost) {
           return;
         }
-        let [target, level, internalFormat, width, height, depth, border, format, type] = args;
+        const [target, level, internalFormat, width, height, depth, /*border*/, /*format*/, type] = args;
         const info = getTextureInfo(target);
         updateMipLevel(info, target, level, internalFormat, width, height, depth, type);
       },
@@ -1021,21 +1030,26 @@
         if (sharedState.isContextLost) {
           return;
         }
-        let [target, pname, value] = args;
+        const [target, pname, value] = args;
         const info = getTextureInfo(target);
+
+        if (!info) {
+          info = {};
+        }
+
         info.parameters = info.parameters || new Map();
         info.parameters.set(pname, value);
       },
 
       // void gl.texStorage2D(target, levels, internalformat, width, height);
       texStorage2D(ctx, funcName, args) {
-        let [target, levels, internalFormat, width, height] = args;
+        const [target, levels, internalFormat, width, height] = args;
         updateTexStorage(target, levels, internalFormat, width, height, 1);
       },
 
       // void gl.texStorage3D(target, levels, internalformat, width, height, depth);
       texStorage3D(ctx, funcName, args) {
-        let [target, levels, internalFormat, width, height, depth] = args;
+        const [target, levels, internalFormat, width, height, depth] = args;
         updateTexStorage(target, levels, internalFormat, width, height, depth);
       },
     };
@@ -1043,7 +1057,7 @@
     const extraWrappers = {
       getExtension(ctx, propertyName) {
         if (sharedState.isContextLost) {
-          return null;
+          return;
         }
         const origFn = ctx[propertyName];
         ctx[propertyName] = function(...args) {
@@ -1115,11 +1129,6 @@
   CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   */
 
-  /* global console */
-  /* global document */
-  /* global HTMLCanvasElement */
-  /* global OffscreenCanvas */
-
   function wrapGetContext(Ctor) {
     const oldFn = Ctor.prototype.getContext;
     Ctor.prototype.getContext = function(type, ...args) {
@@ -1142,4 +1151,4 @@
     wrapGetContext(OffscreenCanvas);
   }
 
-})));
+}));
