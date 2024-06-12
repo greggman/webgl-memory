@@ -80,6 +80,8 @@
 
   const SRGB_ALPHA_EXT               = 0x8C42;
 
+  const STENCIL_INDEX8               = 0x8D48;
+
   /**
    * @typedef {Object} TextureFormatDetails
    * @property {number} textureFormat format to pass texImage2D and similar functions.
@@ -161,6 +163,8 @@
       t[DEPTH_COMPONENT32F] = { bytesPerElement: [4],  };
       t[DEPTH24_STENCIL8]   = { bytesPerElement: [4],  };
       t[DEPTH32F_STENCIL8]  = { bytesPerElement: [4],  };
+
+      t[STENCIL_INDEX8]     = { bytesPerElement: [1],  };
 
       s_textureInternalFormatInfo = t;
     }
