@@ -4,6 +4,7 @@
   "description": "A WebGL memory tracker",
   "main": "webgl-memory.js",
   "module": "webgl-memory.js",
+  "type": "module",
   "scripts": {
     "build": "rollup -c",
     "check-ci": "npm run eslint && npm run build && npm run test",
@@ -29,15 +30,14 @@
   ],
   "homepage": "https://github.com/greggman/webgl-memory#readme",
   "devDependencies": {
-    "@rollup/plugin-node-resolve": "^15.0.1",
-    "eslint": "^7.5.0",
-    "eslint-plugin-html": "^6.2.0",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "eslint": "^8.57.0",
+    "eslint-plugin-html": "^8.1.1",
     "eslint-plugin-one-variable-per-var": "^0.0.3",
     "eslint-plugin-optional-comma-spacing": "^0.0.4",
     "eslint-plugin-require-trailing-comma": "^0.0.1",
-    "express": "^4.18.2",
-    "puppeteer": "^19.3.0",
-    "rollup": "^2.23.0",
-    "rollup-plugin-node-resolve": "^5.2.0"
+    "express": "^4.19.2",
+    "puppeteer": "^22.11.0",
+    "rollup": "^4.18.0"
   }
 }

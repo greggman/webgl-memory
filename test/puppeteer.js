@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
-/* global require, __dirname */
-
-const puppeteer = require('puppeteer');
-const path = require('path');
-const express = require('express');
+import puppeteer from 'puppeteer';
+import path from 'path';
+import url from 'url';
+import express from  'express';
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));  // eslint-disable-line
 const app = express();
 const port = 3000;
 
