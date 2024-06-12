@@ -1,9 +1,8 @@
-name: Test
+name: Build and Publish
 on:
   push:
-    branches:
-      - main
-  pull_request:
+    tags:
+      - v*
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -22,3 +21,8 @@ jobs:
         run: |
           npm ci
           npm run check-ci
+
+      - name: Publish to NPM
+        uses: JS-DevTools/npm-publish@v3
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
