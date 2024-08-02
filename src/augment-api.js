@@ -29,6 +29,8 @@ import {
   getDrawingbufferInfo,
   isBufferSource,
   isNumber,
+  getStackTrace,
+  collectObjects,
 } from './utils.js';
 
 //------------ [ from https://github.com/KhronosGroup/WebGLDeveloperTools ]
@@ -87,6 +89,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
           ctx: {
             getMemoryInfo() {
               const drawingbuffer = computeDrawingbufferSize(ctx, drawingBufferInfo);
+              const textures = collectObjects(sharedState, 'WebGLTexture');
               return {
                 memory: {
                   ...memory,
@@ -96,6 +99,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
                 resources: {
                   ...resources,
                 },
+                textures,
               };
             },
           },
@@ -203,6 +207,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
       ++resources[typeName];
       webglObjectToMemory.set(webglObj, {
         size: 0,
+        stackCreated: getStackTrace(),
       });
     };
   }
@@ -314,6 +319,8 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
 
     memory.texture -= oldSize;
     memory.texture += info.size;
+
+    info.stackUpdated = getStackTrace();
   }
 
   function updateTexStorage(target, levels, internalFormat, width, height, depth) {

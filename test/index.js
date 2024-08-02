@@ -11,6 +11,7 @@ import './tests/sync-tests.js';
 import './tests/texture-tests.js';
 import './tests/transformfeedback-tests.js';
 import './tests/vertexarray-tests.js';
+import './tests/stack-tests.js';
 
 const settings = Object.fromEntries(new URLSearchParams(window.location.search).entries());
 if (settings.reporter) {

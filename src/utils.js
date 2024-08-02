@@ -126,3 +126,23 @@ export function computeDrawingbufferSize(gl, drawingBufferInfo) {
 export function isNumber(v) {
   return typeof v === 'number';
 }
+
+export function collectObjects(state, type) {
+  const list = [...state.webglObjectToMemory.keys()]
+    .filter((obj) => obj.constructor.name === type)
+    .map((obj) => state.webglObjectToMemory.get(obj));
+
+  return list;
+}
+
+function cleanStackLine(line) {
+  return line.replace(/^\s*at\s+/, '');
+}
+
+export function getStackTrace() {
+  const stack = (new Error()).stack;
+  const lines = stack.split('\n');
+  // Remove the first two entries, the error message and this function itself, or the webgl-memory itself.
+  const userLines = lines.slice(2).filter((l) => !l.includes('webgl-memory'));
+  return userLines.map((l) => cleanStackLine(l));
+}
