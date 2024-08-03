@@ -30,7 +30,12 @@ Then in your code
 const ext = gl.getExtension('GMAN_webgl_memory');
 ...
 if (ext) {
+  // memory info
   const info = ext.getMemoryInfo();
+  // every texture, it's size, a stack of where it was created and a stack of where it was last updated.
+  const textures = ext.getResourcesInfo(WebGLTexture);
+  // every buffer, it's size, a stack of where it was created and a stack of where it was last updated.
+  const buffers = ext.getResourcesInfo(WebGLBuffer);
 }
 ```
 
@@ -60,6 +65,35 @@ The info returned is
 }
 ```
 
+The data for textures and buffers
+
+```js
+const ext = gl.getExtension('GMAN_webgl_memory');
+...
+if (ext) {
+  const tex = gl.createTexture(); // 1
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, 4, 1); // 2
+
+  const buf = gl.createBuffer(); // 3
+  gl.bindBuffer(gl.ARRAY_BUFFER);
+  gl.bufferData(gl.ARRAY_BUFFER, 32, gl.STATIC_DRAW); // 4
+
+
+  const textures = ext.getResourcesInfo(WebGLTexture);
+  const buffers = ext.getResourcesInfo(WebGLBuffer);
+```
+
+```js
+  textures = [
+    { size: 16, stackCreated: '...1...', stackUpdated: '...2...' }
+  ]
+
+  buffers = [
+    { size: 32, stackCreated: '...3'''., stackUpdated: '...4...' }
+  ]
+```
+
 ## Caveats
 
 1. You must have WebGL error free code. 
@@ -85,8 +119,73 @@ The info returned is
    the issue by watching your resources counts climb.
 
    Given that it seemed okay to skip this for now.
-   
-3. `texImage2D/3D` vs `texStorage2D/3D`
+
+3. Deletion by Garbage Collection (GC) is not supported
+
+   In JavaScript and WebGL, it's possible to let things get auto deleted by GC.
+
+   ```js
+   {
+      const buf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.bufferData(gl.ARRAY_BUFFER, 1024 * 1024 * 256, gl.STATIC_DRAW);
+      gl.bindBuffer(gl.ARRAY_BUFFER, null);
+   }
+   ```
+
+   Given the code above, buffer will, at some point in the future, get automatically
+   deleted. The problem is you have no idea when. JavaScript does know now the size of
+   VRAM nor does it have any concept of the size of the WebGL buffer (256meg in this case).
+   All JavaScript has is a tiny object that holds an ID for the actual OpenGL buffer
+   and maybe a little metadata. 
+
+   That means there's absolutely no pressure to delete the buffer above in a timely
+   manner nor either is there any way for JavaScript to know that releasing that
+   object would free up VRAM.
+
+   In other words. Let's say you had a total of 384meg of ram. You'd expect this to
+   work.
+
+   ```js
+   {
+     const a = new Uint32Array(256 * 1024 * 1024)
+   }
+   {
+     const b = new Uint32Array(256 * 1024 * 1024)
+   }
+   ```
+
+   The code above allocates 512meg. Given we were pretending the system only has 384meg,
+   JavaScript will likely free `a` to make room for `b`
+
+   Now, Let's do the WebGL case and assume 384meg of VRAM
+
+   ```js
+   {
+      const a = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.bufferData(gl.ARRAY_BUFFER, 1024 * 1024 * 256, gl.STATIC_DRAW);
+      gl.bindBuffer(gl.ARRAY_BUFFER, null);
+   }
+   {
+      const b = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.bufferData(gl.ARRAY_BUFFER, 1024 * 1024 * 256, gl.STATIC_DRAW);
+      gl.bindBuffer(gl.ARRAY_BUFFER, null);
+   }
+   ```
+
+   In this case, JavaScript only sees `a` as taking a few bytes (the object that tracks
+   the OpenGL resource) so it has no idea that it needs to free `a` to make room for `b`.
+   This could would fail, ideally with `gl.OUT_OF_MEMORY`.
+
+   That was the long way of saying, you should never count on GC for WebGL!
+   Free your resources explicitly!
+
+   That's also part of the reason why we don't support this case because
+   counting on GC is not a useful solution.
+
+4. `texImage2D/3D` vs `texStorage2D/3D`
 
    Be aware that `texImage2D/3D` *may* require double the memory of
    `texStorage2D/3D`. 
@@ -109,7 +208,7 @@ The info returned is
    you can just upload the new image to the existing texture. With `texStorage`
    you'd be required to create a new texture. 
    
-4. `ELEMENT_ARRAY_BUFFER`
+5. `ELEMENT_ARRAY_BUFFER`
 
    Buffers used with `ELEMENT_ARRAY_BUFFER` may need a second copy in ram.
    This is because WebGL requires no out of bounds memory access (eg,
@@ -209,6 +308,6 @@ vs just some library you call like `webglMemoryTracker.init(someWebGLRenderingCo
 I structured it this way just because I used [webgl-lint](https://greggman.github.io/webgl-lint) as
 the basis to get this working.
 
-## Licence
+## License
 
 [MIT](https://github.com/greggman/webgl-memory/blob/main/LICENCE.md)

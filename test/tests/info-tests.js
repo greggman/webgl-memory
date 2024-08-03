@@ -22,7 +22,7 @@ describe('info tests', () => {
     assertEqual(drawingbufferSize, canvasSize);
 
     const info = ext.getMemoryInfo();
-    const {memory, resources, textures} = info;
+    const {memory, resources} = info;
 
     assertEqual(memory.buffer, 0);
     assertEqual(memory.texture, 0);
@@ -40,6 +40,8 @@ describe('info tests', () => {
     assertEqual(resources.texture, 0);
     assertEqual(resources.transformFeedback, undefined);
     assertEqual(resources.vertexArray, undefined);
+
+    const textures = ext.getResourcesInfo(WebGLTexture);
     assertEqual(textures.length, 0);
   });
 
@@ -48,7 +50,7 @@ describe('info tests', () => {
     assertTruthy(ext, 'got extension');
 
     const info = ext.getMemoryInfo();
-    const {memory, resources, textures} = info;
+    const {memory, resources} = info;
 
     assertEqual(memory.buffer, 0);
     assertEqual(memory.texture, 0);
@@ -66,6 +68,8 @@ describe('info tests', () => {
     assertEqual(resources.texture, 0);
     assertEqual(resources.transformFeedback, 0);
     assertEqual(resources.vertexArray, 0);
+
+    const textures = ext.getResourcesInfo(WebGLTexture);
     assertEqual(textures.length, 0);
   });
 

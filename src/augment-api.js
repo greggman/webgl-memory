@@ -89,7 +89,6 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
           ctx: {
             getMemoryInfo() {
               const drawingbuffer = computeDrawingbufferSize(ctx, drawingBufferInfo);
-              const textures = collectObjects(sharedState, 'WebGLTexture');
               return {
                 memory: {
                   ...memory,
@@ -99,8 +98,10 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
                 resources: {
                   ...resources,
                 },
-                textures,
               };
+            },
+            getResourcesInfo(type) {
+              return collectObjects(sharedState, type);
             },
           },
         },
@@ -250,6 +251,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
 
     memory.renderbuffer -= info.size;
     info.size = newSize;
+    info.stackUpdated = getStackTrace();
     memory.renderbuffer += newSize;
   }
 
@@ -407,6 +409,7 @@ export function augmentAPI(ctx, nameOfClass, options = {}) {
 
       memory.buffer -= info.size;
       info.size = newSize;
+      info.stackUpdated = getStackTrace();
       memory.buffer += newSize;
     },
 

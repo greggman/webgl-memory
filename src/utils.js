@@ -129,7 +129,7 @@ export function isNumber(v) {
 
 export function collectObjects(state, type) {
   const list = [...state.webglObjectToMemory.keys()]
-    .filter((obj) => obj.constructor.name === type)
+    .filter(obj => obj instanceof type)
     .map((obj) => state.webglObjectToMemory.get(obj));
 
   return list;
