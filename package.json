@@ -1,6 +1,6 @@
 {
   "name": "webgl-memory",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A WebGL memory tracker",
   "main": "webgl-memory.js",
   "module": "webgl-memory.js",
