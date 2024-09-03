@@ -119,7 +119,7 @@ export function computeDrawingbufferSize(gl, drawingBufferInfo) {
   const colorSize = 4;
   const size = gl.drawingBufferWidth * gl.drawingBufferHeight;
   const depthStencilSize = computeDepthStencilSize(drawingBufferInfo);
-  return size * colorSize + size * samples * colorSize + size * depthStencilSize;
+  return size * colorSize + size * (samples === 1 ? 0 : samples) * colorSize + size * depthStencilSize;
 }
 
 // I know this is not a full check

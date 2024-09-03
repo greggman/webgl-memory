@@ -1,4 +1,4 @@
-/* webgl-memory@1.0.16, license MIT */
+/* webgl-memory@1.1.1, license MIT */
 (function (factory) {
   typeof define === 'function' && define.amd ? define(factory) :
   factory();
@@ -388,12 +388,28 @@
     const colorSize = 4;
     const size = gl.drawingBufferWidth * gl.drawingBufferHeight;
     const depthStencilSize = computeDepthStencilSize(drawingBufferInfo);
-    return size * colorSize + size * samples * colorSize + size * depthStencilSize;
+    return size * colorSize + size * (samples === 1 ? 0 : samples) * colorSize + size * depthStencilSize;
   }
 
   // I know this is not a full check
   function isNumber(v) {
     return typeof v === 'number';
+  }
+
+  function collectObjects(state, type) {
+    const list = [...state.webglObjectToMemory.keys()]
+      .filter(obj => obj instanceof type)
+      .map((obj) => state.webglObjectToMemory.get(obj));
+
+    return list;
+  }
+
+  function getStackTrace() {
+    const stack = (new Error()).stack;
+    const lines = stack.split('\n');
+    // Remove the first two entries, the error message and this function itself, or the webgl-memory itself.
+    const userLines = lines.slice(2).filter((l) => !l.includes('webgl-memory.js'));
+    return userLines.join('\n');
   }
 
   /*
@@ -486,6 +502,9 @@
                     ...resources,
                   },
                 };
+              },
+              getResourcesInfo(type) {
+                return collectObjects(sharedState, type);
               },
             },
           },
@@ -592,6 +611,7 @@
         ++resources[typeName];
         webglObjectToMemory.set(webglObj, {
           size: 0,
+          stackCreated: getStackTrace(),
         });
       };
     }
@@ -634,6 +654,7 @@
 
       memory.renderbuffer -= info.size;
       info.size = newSize;
+      info.stackUpdated = getStackTrace();
       memory.renderbuffer += newSize;
     }
 
@@ -703,6 +724,8 @@
 
       memory.texture -= oldSize;
       memory.texture += info.size;
+
+      info.stackUpdated = getStackTrace();
     }
 
     function updateTexStorage(target, levels, internalFormat, width, height, depth) {
@@ -789,6 +812,7 @@
 
         memory.buffer -= info.size;
         info.size = newSize;
+        info.stackUpdated = getStackTrace();
         memory.buffer += newSize;
       },
 
