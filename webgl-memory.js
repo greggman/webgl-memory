@@ -1,4 +1,4 @@
-/* webgl-memory@1.1.1, license MIT */
+/* webgl-memory@1.1.2, license MIT */
 (function (factory) {
   typeof define === 'function' && define.amd ? define(factory) :
   factory();
@@ -68,6 +68,7 @@
   const DEPTH_COMPONENT32F           = 0x8CAC;
   const DEPTH32F_STENCIL8            = 0x8CAD;
   const DEPTH24_STENCIL8             = 0x88F0;
+  const STENCIL_INDEX8               = 0x8d48;
 
   /* DataType */
   // const BYTE                         = 0x1400;
@@ -166,6 +167,7 @@
       t[DEPTH_COMPONENT32F] = { bytesPerElement: [4],  };
       t[DEPTH24_STENCIL8]   = { bytesPerElement: [4],  };
       t[DEPTH32F_STENCIL8]  = { bytesPerElement: [4],  };
+      t[STENCIL_INDEX8]     = { bytesPerElement: [1],  };
 
       s_textureInternalFormatInfo = t;
     }
