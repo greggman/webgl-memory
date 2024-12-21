@@ -36,8 +36,8 @@
     "eslint-plugin-one-variable-per-var": "^0.0.3",
     "eslint-plugin-optional-comma-spacing": "^0.0.4",
     "eslint-plugin-require-trailing-comma": "^0.0.1",
-    "express": "^4.19.2",
-    "puppeteer": "^22.11.0",
-    "rollup": "^4.18.0"
+    "express": "^4.21.2",
+    "puppeteer": "^23.11.1",
+    "rollup": "^4.29.1"
   }
 }
