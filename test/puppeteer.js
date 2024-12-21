@@ -26,7 +26,7 @@ function makePromiseInfo() {
 async function test(port) {
   const browser = await puppeteer.launch({
     args: [
-      '--no-sandbox', 
+      '--no-sandbox',
       '--disable-setuid-sandbox',
     ],
   });
