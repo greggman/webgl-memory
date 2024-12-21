@@ -63,6 +63,7 @@ const DEPTH_COMPONENT24            = 0x81A6;
 const DEPTH_COMPONENT32F           = 0x8CAC;
 const DEPTH32F_STENCIL8            = 0x8CAD;
 const DEPTH24_STENCIL8             = 0x88F0;
+const STENCIL_INDEX8               = 0x8d48;
 
 /* DataType */
 // const BYTE                         = 0x1400;
@@ -196,6 +197,7 @@ function getTextureInternalFormatInfo(internalFormat) {
     t[DEPTH_COMPONENT32F] = { bytesPerElement: [4],  };
     t[DEPTH24_STENCIL8]   = { bytesPerElement: [4],  };
     t[DEPTH32F_STENCIL8]  = { bytesPerElement: [4],  };
+    t[STENCIL_INDEX8]     = { bytesPerElement: [1],  };
 
     s_textureInternalFormatInfo = t;
   }

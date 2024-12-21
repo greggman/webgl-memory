@@ -49,6 +49,28 @@ describe('renderbuffer tests', () => {
     tracker.deleteObjectAndMemory(size2);
   });
 
+  it('test renderbufferStorage STENCIL_INDEX8', () => {
+    const {gl} = createContext();
+    const tracker = new MemInfoTracker(gl, 'renderbuffer');
+
+    const rb1 = gl.createRenderbuffer();
+    tracker.addObjects(1);
+
+    gl.bindRenderbuffer(gl.RENDERBUFFER, rb1);
+    let size1a;
+    {
+      const width = 17;
+      const height = 49;
+      gl.renderbufferStorage(gl.RENDERBUFFER, gl.STENCIL_INDEX8, width, height);
+      size1a = width * height;
+      tracker.addMemory(size1a);
+    }
+
+    gl.deleteRenderbuffer(rb1);
+    tracker.deleteObjectAndMemory(size1a);
+  });
+
+
   it('test renderbufferStorageMultisample', () => {
     const {gl} = createContext2();
     if (!gl) {
