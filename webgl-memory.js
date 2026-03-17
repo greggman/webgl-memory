@@ -359,11 +359,11 @@
   }
 
   function isTypedArray(v) {
-    return v && v.buffer && v.buffer instanceof ArrayBuffer;
+    return v != null && ArrayBuffer.isView(v);
   }
 
   function isBufferSource(v) {
-    return isTypedArray(v) || v instanceof ArrayBuffer;
+    return isTypedArray(v) || v instanceof ArrayBuffer || Object.prototype.toString.call(v) === '[object ArrayBuffer]';
   }
 
   function getDrawingbufferInfo(gl) {
