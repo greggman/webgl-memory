@@ -182,7 +182,7 @@ if (ext) {
    ```text
          JS HEAP (CPU RAM)                                  GPU VRAM (Graphics Memory)
     ======================================      ======================================================
-     (V8 Memory Pressure: ~0.001%)                        (GPU Memory Pressure: 100% - OOM)
+     (JS Memory Pressure: ~0.001%)                        (GPU Memory Pressure: 100% - OOM)
 
                                                 +---------------------------------------------------+
      +--+                                       |                                                   |
@@ -211,7 +211,7 @@ if (ext) {
                                                 +---------------------------------------------------+
 
     ... JS sees a few tiny 64-byte wrappers.    ... The GPU is entirely out of memory and crashes.
-    ... It is comfortably asleep and            ... It is waiting for V8 to delete the wrappers
+    ... It is comfortably asleep and            ... It is waiting for JS to delete the wrappers
     ... has no reason to trigger a GC cycle.    ... so the underlying C++ finalizers can fire.
 
    ```
