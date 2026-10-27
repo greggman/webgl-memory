@@ -179,13 +179,58 @@ if (ext) {
    the OpenGL resource) so it has no idea that it needs to free `a` to make room for `b`.
    This could would fail, ideally with `gl.OUT_OF_MEMORY`.
 
+   ```text
+         JS HEAP (CPU RAM)                                  GPU VRAM (Graphics Memory)
+    ======================================      ======================================================
+     (V8 Memory Pressure: ~0.001%)                        (GPU Memory Pressure: 100% - OOM)
+
+                                                +---------------------------------------------------+
+     +--+                                       |                                                   |
+     |id| -------- references ----------------> |                                                   |
+     +--+                                       |             Actual Texture / Buffer Data          |
+   (64 bytes)                                   |                (e.g., 4Kx4K texture)              |
+                                                |                                                   |
+     +--+                                       |                                                   |
+     |id| -------- references ----------------> |                                                   |
+     +--+                                       |                   67,108,864 BYTES                |
+   (64 bytes)                                   |                   (~64 Megabytes)                 |
+                                                |                                                   |
+     +--+                                       |                                                   |
+     |id| -------- references ----------------> |                                                   |
+     +--+                                       |                                                   |
+   (64 bytes)                                   +---------------------------------------------------+
+                                             
+                                                +---------------------------------------------------+
+     +--+                                       |                                                   |
+     |id| -------- references ----------------> |             Actual Texture / Buffer Data          |
+     +--+                                       |                  (e.g., Vertex Array)             |
+   (64 bytes)                                   |                                                   |
+                                                |                   33,554,432 BYTES                |
+                                                |                   (~32 Megabytes)                 |
+                                                |                                                   |
+                                                +---------------------------------------------------+
+
+    ... JS sees a few tiny 64-byte wrappers.    ... The GPU is entirely out of memory and crashes.
+    ... It is comfortably asleep and            ... It is waiting for V8 to delete the wrappers
+    ... has no reason to trigger a GC cycle.    ... so the underlying C++ finalizers can fire.
+
+   ```
+
+   JS's Garbage Collector (GC) only looks at the left side of this diagram. It measures memory pressure based on how much space JavaScript objects are taking up in CPU RAM.
+
+   Because `WebGLBuffer`, `WebGLTexture` objects are just lightweight JavaScript wrappers containing an integer handle, you could create 10,000 of them and JS would only see ~640 Kilobytes of memory usage. From JS's perspective, everything is perfectly fine, so the Garbage Collector stays dormant.
+
+   Meanwhile, on the right side of the diagram, those 10,000 tiny wrappers are secretly holding onto gigabytes of VRAM. Because JS hasn't felt enough pressure to run a GC cycle to clean up the unused wrappers, the underlying GPU memory is never released, resulting in a WebGL context loss or a WebGPU out-of-memory crash.
+
+   This is why you must manually call `gl.deleteBuffer`, `gl.deleteTexture()` when you are done with a GPU resource.
+
    That was the long way of saying, you should never count on GC for WebGL!
    Free your resources explicitly!
 
    That's also part of the reason why we don't support this case because
    counting on GC is not a useful solution.
 
-4. `texImage2D/3D` vs `texStorage2D/3D`
+5. `texImage2D/3D` vs `texStorage2D/3D`
 
    Be aware that `texImage2D/3D` *may* require double the memory of
    `texStorage2D/3D`. 
@@ -208,7 +253,7 @@ if (ext) {
    you can just upload the new image to the existing texture. With `texStorage`
    you'd be required to create a new texture. 
    
-5. `ELEMENT_ARRAY_BUFFER`
+6. `ELEMENT_ARRAY_BUFFER`
 
    Buffers used with `ELEMENT_ARRAY_BUFFER` may need a second copy in ram.
    This is because WebGL requires no out of bounds memory access (eg,
